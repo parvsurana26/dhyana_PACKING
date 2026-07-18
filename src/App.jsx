@@ -584,7 +584,12 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
           <tbody>
             {rows.map((row, index) => {
               const brandProducts = products.filter((product) => product.brand_id === row.brand_id && product.is_active);
-              const itemProducts = brandProducts.filter((product) => !row.item_name || product.item_name === row.item_name);
+              const itemProducts = brandProducts
+                .filter((product) => !row.item_name || product.item_name === row.item_name)
+                .sort((a, b) => String(a.size || '').localeCompare(String(b.size || ''), undefined, {
+                  numeric: true,
+                  sensitivity: 'base',
+                }));
               const searchableProducts = products.filter((product) => product.is_active && (!row.brand_id || product.brand_id === row.brand_id));
               const searchableItemNames = [...new Set(searchableProducts.map((product) => product.item_name))]
                 .sort((a, b) => a.localeCompare(b));
