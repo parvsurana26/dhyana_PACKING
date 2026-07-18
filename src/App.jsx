@@ -88,6 +88,26 @@ function Logo() {
   );
 }
 
+async function loadAllProducts() {
+  const pageSize = 1000;
+  const allProducts = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const result = await supabase
+      .from('products')
+      .select('*, brands(name)')
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, from + pageSize - 1);
+
+    if (result.error) return result;
+    allProducts.push(...(result.data || []));
+    if (!result.data || result.data.length < pageSize) {
+      return { data: allProducts, error: null };
+    }
+  }
+}
+
 function useSupabaseData(user) {
   const [brands, setBrands] = useState([]);
   const [parties, setParties] = useState([]);
@@ -103,7 +123,7 @@ function useSupabaseData(user) {
     const [brandRes, partyRes, productRes, discountRes, slipRes, itemRes] = await Promise.all([
       supabase.from('brands').select('*').order('name'),
       supabase.from('parties').select('*').order('name'),
-      supabase.from('products').select('*, brands(name)').order('created_at', { ascending: false }).range(0, 4999),
+      loadAllProducts(),
       supabase.from('party_brand_discounts').select('*, parties(name), brands(name)').order('created_at', { ascending: false }),
       supabase.from('packing_slips').select('*').order('created_at', { ascending: false }),
       supabase.from('packing_items').select('*').order('sort_order').order('created_at').order('id'),
