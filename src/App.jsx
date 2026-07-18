@@ -424,7 +424,7 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
       <div className="panel grid gap-4 md:grid-cols-3">
         <label className="md:col-span-2">
           <span className="label">Select Party</span>
-          <CreativeSelect className="input" value={form.party_id} onChange={(e) => chooseParty(e.target.value)}>
+          <CreativeSelect searchable searchPlaceholder="Search saved party..." className="input" value={form.party_id} onChange={(e) => chooseParty(e.target.value)}>
             <option value="">Select saved party</option>
             {parties.filter((party) => party.is_active).map((party) => (
               <option key={party.id} value={party.id}>
