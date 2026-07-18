@@ -30,10 +30,12 @@ import {
   GripVertical,
   LoaderCircle,
   Save,
+  ImageDown,
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { buildMailTo, buildWhatsAppChatUrl, exportSlipsToExcel } from './utils/export';
 import { downloadSlipPdf, getSlipPdfFile } from './utils/pdf';
+import { downloadSlipImage } from './utils/image';
 import logoImage from './assets/logo.jpeg';
 
 const emptyItem = {
@@ -644,6 +646,7 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
             {savingAction === 'Completed' ? 'Completing...' : 'Complete'}
           </button>
           <button className="btn-secondary" onClick={() => downloadSlipPdf(printableSlip, rows)}><Download size={17} /> Save as PDF</button>
+          <button className="btn-secondary" onClick={() => downloadSlipImage(printableSlip, rows).catch((error) => toast.error(error.message))}><ImageDown size={17} /> Save as Image</button>
           <button className="btn-secondary" onClick={() => window.print()}><Printer size={17} /> Print</button>
           <button className="btn-secondary" onClick={() => emailSlipPdfWithGmail(printableSlip, rows)}><Mail size={17} /> Email</button>
         </div>
@@ -746,6 +749,7 @@ function SlipView({ slips, items }) {
       <PageTitle title={`Packing Slip ${slip.slip_no}`} subtitle={`${slip.party_name} | ${slip.slip_date}`} />
       <div className="panel flex flex-wrap gap-2">
         <button className="btn-secondary" onClick={() => downloadSlipPdf(slip, slipItems)}><Download size={17} /> Download PDF</button>
+        <button className="btn-secondary" onClick={() => downloadSlipImage(slip, slipItems).catch((error) => toast.error(error.message))}><ImageDown size={17} /> Download Image</button>
         <button className="btn-secondary" onClick={() => window.print()}><Printer size={17} /> Print</button>
         <button className="btn-secondary" onClick={() => emailSlipPdfWithGmail(slip, slipItems)}><Mail size={17} /> Email</button>
         <button className="btn-secondary" onClick={() => shareSlipPdfToWhatsApp(slip, slipItems)}><Send size={17} /> WhatsApp PDF</button>
