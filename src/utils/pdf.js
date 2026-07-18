@@ -2,7 +2,6 @@ import jsPDF from 'jspdf';
 import logoImage from '../assets/logo.jpeg';
 
 const BLUE = [11, 94, 168];
-const ORANGE = [243, 107, 33];
 const INK = [15, 23, 42];
 const MUTED = [100, 116, 139];
 const LINE = [226, 232, 240];
@@ -49,8 +48,10 @@ async function createSlipPdf(slip, items = []) {
   }
 
   const drawBrandHeader = (continued = false) => {
+    pdf.setFillColor(...BLUE);
+    pdf.rect(1.5, 2.5, pageWidth - 3, 2, 'F');
     if (logoDataUrl) {
-      pdf.addImage(logoDataUrl, 'JPEG', margin, continued ? 8 : 8, continued ? 42 : 62, continued ? 13 : 19);
+      pdf.addImage(logoDataUrl, 'JPEG', margin, continued ? 8 : 8, continued ? 38 : 52, continued ? 12 : 16);
     } else {
       pdf.setTextColor(...BLUE);
       pdf.setFont('helvetica', 'bold');
@@ -70,24 +71,23 @@ async function createSlipPdf(slip, items = []) {
 
     pdf.setTextColor(...BLUE);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(11);
-    pdf.text('PACKING SLIP', pageWidth - margin, 16, { align: 'right' });
+    pdf.setFontSize(12);
+    pdf.text('PACKING SLIP', pageWidth - margin, 14, { align: 'right' });
     pdf.setTextColor(...MUTED);
-    pdf.setFontSize(8);
-    pdf.text(`Bill No. ${slip.slip_no || '-'}`, pageWidth - margin, 24, { align: 'right' });
-    pdf.setFillColor(...ORANGE);
-    pdf.roundedRect(pageWidth - margin - 23, 28, 23, 2, 1, 1, 'F');
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7.5);
+    pdf.text(`Date: ${slip.slip_date || '-'}`, pageWidth - margin, 21, { align: 'right' });
     pdf.setDrawColor(...LINE);
-    pdf.line(margin, 39, pageWidth - margin, 39);
-    return 47;
+    pdf.line(margin, 31, pageWidth - margin, 31);
+    return 36;
   };
 
-  const infoValue = (label, value, x, top, maxWidth) => {
+  const infoValue = (label, value, x, top, maxWidth, valueColor = INK) => {
     pdf.setTextColor(...MUTED);
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(7.5);
     pdf.text(label.toUpperCase(), x, top);
-    pdf.setTextColor(...INK);
+    pdf.setTextColor(...valueColor);
     pdf.setFontSize(10);
     const lines = pdf.splitTextToSize(String(value || '-'), maxWidth);
     pdf.text(lines.slice(0, 2), x, top + 6);
@@ -96,27 +96,30 @@ async function createSlipPdf(slip, items = []) {
   const drawPartyCard = () => {
     pdf.setFillColor(...SOFT);
     pdf.setDrawColor(...LINE);
-    pdf.roundedRect(margin, y, contentWidth, 38, 3, 3, 'FD');
-    pdf.setFillColor(...BLUE);
-    pdf.roundedRect(margin, y, 3, 38, 1.5, 1.5, 'F');
-    infoValue('Party name', slip.party_name, margin + 8, y + 9, 69);
-    infoValue('Transport', slip.transport, margin + 83, y + 9, 49);
-    infoValue('Slip date', slip.slip_date, margin + 140, y + 9, 37);
-    infoValue('Phone', slip.phone, margin + 8, y + 27, 58);
-    infoValue('Location', slip.location, margin + 83, y + 27, 55);
-    infoValue('Bundles', slip.bundle_count || 0, margin + 140, y + 27, 37);
-    y += 47;
+    pdf.roundedRect(margin, y, contentWidth, 20, 3, 3, 'FD');
+    infoValue('Party name', slip.party_name, margin + 5, y + 7, 105);
+    infoValue('Packing slip / bill no.', slip.slip_no, margin + 126, y + 7, 48, BLUE);
+    const detailsY = y + 27;
+    pdf.setTextColor(...INK);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7.2);
+    pdf.text(`Transport: ${slip.transport || '-'}`, margin, detailsY);
+    pdf.text(`Phone: ${slip.phone || '-'}`, margin + 53, detailsY);
+    pdf.text(`Location: ${slip.location || '-'}`, margin + 101, detailsY);
+    pdf.text(`Bundles: ${slip.bundle_count || 0}`, pageWidth - margin, detailsY, { align: 'right' });
+    y += 33;
   };
 
   const columns = [
-    { label: 'Brand', width: 24, align: 'left' },
+    { label: '#', width: 6, align: 'left' },
+    { label: 'Brand', width: 28, align: 'left' },
     { label: 'Item', width: 48, align: 'left' },
-    { label: 'Size', width: 20, align: 'left' },
-    { label: 'Qty', width: 13, align: 'right' },
-    { label: 'Type', width: 15, align: 'left' },
-    { label: 'Rate', width: 22, align: 'right' },
-    { label: 'Disc.', width: 17, align: 'right' },
-    { label: 'Amount', width: 27, align: 'right' },
+    { label: 'Size', width: 16, align: 'left' },
+    { label: 'Qty', width: 11, align: 'right' },
+    { label: 'Type', width: 14, align: 'left' },
+    { label: 'Rate', width: 21, align: 'right' },
+    { label: 'Disc.', width: 18, align: 'right' },
+    { label: 'Amount', width: 24, align: 'right' },
   ];
   const starts = [];
   columns.reduce((x, column) => {
@@ -126,15 +129,15 @@ async function createSlipPdf(slip, items = []) {
 
   const drawTableHeader = () => {
     pdf.setFillColor(...BLUE);
-    pdf.roundedRect(margin, y, contentWidth, 10, 2, 2, 'F');
+    pdf.rect(margin, y, contentWidth, 8, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(8);
+    pdf.setFontSize(6.8);
     columns.forEach((column, index) => {
       const x = column.align === 'right' ? starts[index] + column.width - 2 : starts[index] + 2;
-      pdf.text(column.label, x, y + 6.5, { align: column.align });
+      pdf.text(column.label, x, y + 5.3, { align: column.align });
     });
-    y += 12;
+    y += 9.5;
   };
 
   const addContinuationPage = () => {
@@ -150,6 +153,7 @@ async function createSlipPdf(slip, items = []) {
   const cleanItems = items.filter((item) => item.item_name && Number(item.qty) > 0);
   cleanItems.forEach((item, rowIndex) => {
     const values = [
+      String(rowIndex + 1),
       item.brand_name,
       item.item_name,
       item.size,
@@ -160,9 +164,9 @@ async function createSlipPdf(slip, items = []) {
       money(item.amount),
     ];
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8);
-    const cellLines = values.map((value, index) => pdf.splitTextToSize(String(value || '-'), columns[index].width - 4));
-    const rowHeight = Math.max(11, Math.max(...cellLines.map((lines) => lines.length)) * 4.2 + 4);
+    pdf.setFontSize(6.6);
+    const cellLines = values.map((value, index) => pdf.splitTextToSize(String(value || '-'), columns[index].width - 3));
+    const rowHeight = Math.max(9, Math.max(...cellLines.map((lines) => lines.length)) * 3.4 + 3);
     if (y + rowHeight > pageHeight - 21) addContinuationPage();
 
     if (rowIndex % 2 === 1) {
@@ -173,7 +177,7 @@ async function createSlipPdf(slip, items = []) {
     cellLines.forEach((lines, index) => {
       const column = columns[index];
       const x = column.align === 'right' ? starts[index] + column.width - 2 : starts[index] + 2;
-      pdf.text(lines, x, y + 4, { align: column.align });
+      pdf.text(lines, x, y + 3.4, { align: column.align });
     });
     pdf.setDrawColor(...LINE);
     pdf.line(margin, y + rowHeight - 1, pageWidth - margin, y + rowHeight - 1);
@@ -189,24 +193,19 @@ async function createSlipPdf(slip, items = []) {
   y += 7;
   ensureSpace(82);
   const sectionTop = y;
-  const totalsX = 116;
+  const totalsX = 136;
   const totalsWidth = pageWidth - margin - totalsX;
   const remarkWidth = totalsX - margin - 7;
 
-  pdf.setFillColor(...SOFT);
-  pdf.setDrawColor(...LINE);
-  pdf.roundedRect(margin, sectionTop, remarkWidth, 48, 3, 3, 'FD');
-  pdf.setTextColor(...BLUE);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(8);
-  pdf.text('REMARK / INSTRUCTIONS', margin + 6, sectionTop + 8);
   pdf.setTextColor(...INK);
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(9);
-  const remarkLines = pdf.splitTextToSize(String(slip.remark || 'No special instructions.'), remarkWidth - 12);
-  pdf.text(remarkLines.slice(0, 7), margin + 6, sectionTop + 16);
+  pdf.setFontSize(7.2);
+  const remarkLines = pdf.splitTextToSize(`Remark: ${slip.remark || '-'}`, remarkWidth - 5);
+  pdf.text(remarkLines.slice(0, 5), margin, sectionTop + 7);
 
+  pdf.setTextColor(...INK);
   pdf.setFillColor(...SOFT);
+  pdf.setDrawColor(203, 213, 225);
   pdf.roundedRect(totalsX, sectionTop, totalsWidth, 48, 3, 3, 'FD');
   const totalRows = [
     ['Subtotal', money(slip.subtotal)],
@@ -223,15 +222,15 @@ async function createSlipPdf(slip, items = []) {
     pdf.setFont('helvetica', 'bold');
     pdf.text(amount, pageWidth - margin - 6, rowY, { align: 'right' });
   });
-  pdf.setFillColor(...BLUE);
-  pdf.roundedRect(totalsX + 4, sectionTop + 32, totalsWidth - 8, 12, 2, 2, 'F');
-  pdf.setTextColor(255, 255, 255);
+  pdf.setDrawColor(...LINE);
+  pdf.line(totalsX + 5, sectionTop + 31, pageWidth - margin - 5, sectionTop + 31);
+  pdf.setTextColor(...BLUE);
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(9.5);
+  pdf.setFontSize(9);
   pdf.text('GRAND TOTAL', totalsX + 9, sectionTop + 39.8);
   pdf.text(money(slip.grand_total), pageWidth - margin - 9, sectionTop + 39.8, { align: 'right' });
 
-  y = sectionTop + 60;
+  y = Math.max(sectionTop + 60, pageHeight - 42);
   pdf.setDrawColor(...LINE);
   pdf.line(margin + 6, y + 12, margin + 62, y + 12);
   pdf.line(pageWidth - margin - 62, y + 12, pageWidth - margin - 6, y + 12);
@@ -244,13 +243,14 @@ async function createSlipPdf(slip, items = []) {
   const pageCount = pdf.getNumberOfPages();
   for (let page = 1; page <= pageCount; page += 1) {
     pdf.setPage(page);
-    pdf.setDrawColor(...LINE);
-    pdf.line(margin, pageHeight - 14, pageWidth - margin, pageHeight - 14);
-    pdf.setTextColor(...MUTED);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(7.5);
-    pdf.text('Dhyana Kitchenware  |  The Spirit of Kitchenware', margin, pageHeight - 8);
-    pdf.text(`Packing Slip #${slip.slip_no || '-'}  |  Page ${page} of ${pageCount}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
+    pdf.setFillColor(...BLUE);
+    pdf.rect(1.5, pageHeight - 4.5, pageWidth - 3, 2.5, 'F');
+    if (pageCount > 1) {
+      pdf.setTextColor(...MUTED);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(6.5);
+      pdf.text(`Page ${page} of ${pageCount}`, pageWidth - margin, pageHeight - 7, { align: 'right' });
+    }
   }
   return pdf;
 }
