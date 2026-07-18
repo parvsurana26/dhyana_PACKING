@@ -520,6 +520,10 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
   };
 
   const printableSlip = { ...form, ...totals };
+  const hasKgRows = rows.some((row) => row.qty_type === 'Kg');
+  const itemHeaders = hasKgRows
+    ? ['', 'Brand', 'Product Search', 'Size', 'Qty', 'Type', 'Kg Remark', 'Rate', 'Discount %', 'Amount', '']
+    : ['', 'Brand', 'Product Search', 'Size', 'Qty', 'Type', 'Rate', 'Discount %', 'Amount', ''];
   const moveRow = (targetIndex) => {
     if (draggedIndex === null || draggedIndex === targetIndex) return;
     setRows((currentRows) => {
@@ -575,10 +579,10 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
             <PackagePlus size={17} /> Add Row
           </button>
         </div>
-        <table className="table min-w-[1380px]">
+        <table className={clsx('table', hasKgRows ? 'min-w-[1380px]' : 'min-w-[1220px]')}>
           <thead>
             <tr>
-              {['', 'Brand', 'Product Search', 'Size', 'Qty', 'Type', 'Kg Remark', 'Rate', 'Discount %', 'Amount', ''].map((head, headIndex) => (
+              {itemHeaders.map((head, headIndex) => (
                 <th key={`${head}-${headIndex}`}>{head}</th>
               ))}
             </tr>
@@ -642,7 +646,7 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
                       {qtyTypes.map((type) => <option key={type}>{type}</option>)}
                     </CreativeSelect>
                   </td>
-                  <td>
+                  {hasKgRows && <td>
                     {row.qty_type === 'Kg' ? (
                       <input
                         className="cell-input min-w-40"
@@ -651,7 +655,7 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
                         onChange={(e) => updateRow(index, { item_remark: e.target.value })}
                       />
                     ) : <span className="text-slate-300 dark:text-slate-700">—</span>}
-                  </td>
+                  </td>}
                   <td><input className="cell-input" type="number" value={row.rate} onChange={(e) => updateRow(index, { rate: e.target.value })} /></td>
                   <td>
                     <input
@@ -788,6 +792,7 @@ function SlipView({ slips, items }) {
   const slipItems = items
     .filter((item) => item.packing_slip_id === id)
     .sort(comparePackingItems);
+  const hasKgItems = slipItems.some((item) => item.qty_type === 'Kg');
   if (!slip) return <div className="panel">Packing slip not found.</div>;
   return (
     <div className="space-y-6">
@@ -816,8 +821,11 @@ function SlipView({ slips, items }) {
           <Summary label="Bundles" value={slip.bundle_count || 0} />
         </div>
         <div className="mt-5 overflow-x-auto">
-          <table className="table min-w-[980px]">
-            <thead><tr>{['Brand', 'Item', 'Size', 'Qty', 'Type', 'Remark', 'Rate', 'Discount', 'Amount'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
+          <table className={clsx('table', hasKgItems ? 'min-w-[980px]' : 'min-w-[820px]')}>
+            <thead><tr>{(hasKgItems
+              ? ['Brand', 'Item', 'Size', 'Qty', 'Type', 'Remark', 'Rate', 'Discount', 'Amount']
+              : ['Brand', 'Item', 'Size', 'Qty', 'Type', 'Rate', 'Discount', 'Amount']
+            ).map((h) => <th key={h}>{h}</th>)}</tr></thead>
             <tbody>
               {slipItems.map((item) => (
                 <tr key={item.id}>
@@ -826,7 +834,7 @@ function SlipView({ slips, items }) {
                   <td>{item.size}</td>
                   <td>{item.qty}</td>
                   <td>{item.qty_type}</td>
-                  <td>{item.qty_type === 'Kg' ? item.item_remark || '-' : '-'}</td>
+                  {hasKgItems && <td>{item.qty_type === 'Kg' ? item.item_remark || '-' : '-'}</td>}
                   <td>{money(item.rate)}</td>
                   <td>{item.discount}%</td>
                   <td className="font-semibold">{money(item.amount)}</td>
