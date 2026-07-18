@@ -155,7 +155,9 @@ async function createSlipPdf(slip, items = []) {
     const values = [
       String(rowIndex + 1),
       item.brand_name,
-      item.item_name,
+      item.qty_type === 'Kg' && item.item_remark
+        ? `${item.item_name}\nRemark: ${item.item_remark}`
+        : item.item_name,
       item.size,
       String(item.qty || 0),
       item.qty_type,

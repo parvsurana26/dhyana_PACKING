@@ -17,6 +17,9 @@ alter table public.packing_items
 alter table public.packing_items
   add column if not exists sort_order integer not null default 0;
 
+alter table public.packing_items
+  add column if not exists item_remark text;
+
 with numbered_items as (
   select id,
          row_number() over (
@@ -180,6 +183,7 @@ begin
     product_id,
     brand_name,
     item_name,
+    item_remark,
     size,
     qty,
     qty_type,
@@ -194,6 +198,7 @@ begin
     nullif(item.product_id, '')::uuid,
     nullif(item.brand_name, ''),
     nullif(item.item_name, ''),
+    nullif(item.item_remark, ''),
     nullif(item.size, ''),
     coalesce(item.qty, 0),
     coalesce(nullif(item.qty_type, ''), 'Pcs'),
@@ -206,6 +211,7 @@ begin
     product_id text,
     brand_name text,
     item_name text,
+    item_remark text,
     size text,
     qty numeric,
     qty_type text,

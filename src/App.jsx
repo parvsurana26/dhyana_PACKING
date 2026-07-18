@@ -44,6 +44,7 @@ const emptyItem = {
   item_query: '',
   brand_name: '',
   item_name: '',
+  item_remark: '',
   size: '',
   qty: 1,
   qty_type: 'Pcs',
@@ -418,6 +419,7 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
       brand_id: product.brand_id,
       brand_name: brand?.name || '',
       item_name: product.item_name,
+      item_remark: '',
       size: product.size,
       qty_type: product.qty_type,
       rate: product.rate,
@@ -573,10 +575,10 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
             <PackagePlus size={17} /> Add Row
           </button>
         </div>
-        <table className="table min-w-[1220px]">
+        <table className="table min-w-[1380px]">
           <thead>
             <tr>
-              {['', 'Brand', 'Product Search', 'Size', 'Qty', 'Type', 'Rate', 'Discount %', 'Amount', ''].map((head, headIndex) => (
+              {['', 'Brand', 'Product Search', 'Size', 'Qty', 'Type', 'Kg Remark', 'Rate', 'Discount %', 'Amount', ''].map((head, headIndex) => (
                 <th key={`${head}-${headIndex}`}>{head}</th>
               ))}
             </tr>
@@ -636,9 +638,19 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
                   </td>
                   <td><input className="cell-input" type="number" min="0" value={row.qty} onChange={(e) => updateRow(index, { qty: e.target.value })} /></td>
                   <td>
-                    <CreativeSelect className="cell-input" value={row.qty_type} onChange={(e) => updateRow(index, { qty_type: e.target.value })}>
+                    <CreativeSelect className="cell-input" value={row.qty_type} onChange={(e) => updateRow(index, { qty_type: e.target.value, item_remark: e.target.value === 'Kg' ? row.item_remark : '' })}>
                       {qtyTypes.map((type) => <option key={type}>{type}</option>)}
                     </CreativeSelect>
+                  </td>
+                  <td>
+                    {row.qty_type === 'Kg' ? (
+                      <input
+                        className="cell-input min-w-40"
+                        value={row.item_remark || ''}
+                        placeholder="Enter Kg remark"
+                        onChange={(e) => updateRow(index, { item_remark: e.target.value })}
+                      />
+                    ) : <span className="text-slate-300 dark:text-slate-700">—</span>}
                   </td>
                   <td><input className="cell-input" type="number" value={row.rate} onChange={(e) => updateRow(index, { rate: e.target.value })} /></td>
                   <td>
@@ -804,8 +816,8 @@ function SlipView({ slips, items }) {
           <Summary label="Bundles" value={slip.bundle_count || 0} />
         </div>
         <div className="mt-5 overflow-x-auto">
-          <table className="table min-w-[820px]">
-            <thead><tr>{['Brand', 'Item', 'Size', 'Qty', 'Type', 'Rate', 'Discount', 'Amount'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
+          <table className="table min-w-[980px]">
+            <thead><tr>{['Brand', 'Item', 'Size', 'Qty', 'Type', 'Remark', 'Rate', 'Discount', 'Amount'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
             <tbody>
               {slipItems.map((item) => (
                 <tr key={item.id}>
@@ -814,6 +826,7 @@ function SlipView({ slips, items }) {
                   <td>{item.size}</td>
                   <td>{item.qty}</td>
                   <td>{item.qty_type}</td>
+                  <td>{item.qty_type === 'Kg' ? item.item_remark || '-' : '-'}</td>
                   <td>{money(item.rate)}</td>
                   <td>{item.discount}%</td>
                   <td className="font-semibold">{money(item.amount)}</td>

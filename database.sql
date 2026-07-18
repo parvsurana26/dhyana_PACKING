@@ -84,6 +84,7 @@ create table if not exists public.packing_items (
   product_id uuid references public.products(id) on delete set null,
   brand_name text,
   item_name text,
+  item_remark text,
   size text,
   qty numeric(12,2) not null default 0,
   qty_type text not null check (qty_type in ('Pcs', 'Set', 'Kg', 'Doz', 'Box')),
@@ -96,6 +97,9 @@ create table if not exists public.packing_items (
 
 alter table public.packing_items
   add column if not exists sort_order integer not null default 0;
+
+alter table public.packing_items
+  add column if not exists item_remark text;
 
 create or replace function public.ensure_packing_item_sort_order()
 returns trigger

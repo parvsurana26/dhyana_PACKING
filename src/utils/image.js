@@ -115,7 +115,9 @@ export async function downloadSlipImage(slip, items = []) {
     const values = [
       index + 1,
       item.brand_name,
-      item.item_name,
+      item.qty_type === 'Kg' && item.item_remark
+        ? `${item.item_name} (${item.item_remark})`
+        : item.item_name,
       item.size,
       item.qty,
       item.qty_type,
