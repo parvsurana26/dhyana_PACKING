@@ -1084,7 +1084,7 @@ function DiscountsPage({ brands, parties, discounts, reload }) {
       <form onSubmit={save} className="panel space-y-5">
         <label className="block max-w-xl">
           <span className="label">Party</span>
-          <CreativeSelect className="input" value={selectedPartyId} onChange={(e) => setSelectedPartyId(e.target.value)}>
+          <CreativeSelect searchable searchPlaceholder="Search party..." className="input" value={selectedPartyId} onChange={(e) => setSelectedPartyId(e.target.value)}>
             <option value="">Select party</option>
             {parties.filter((party) => party.is_active).map((party) => (
               <option key={party.id} value={party.id}>{party.name}</option>
@@ -1282,10 +1282,11 @@ function PageTitle({ title, subtitle }) {
   );
 }
 
-function CreativeSelect({ children, className = 'input', value = '', onChange, disabled = false }) {
+function CreativeSelect({ children, className = 'input', value = '', onChange, disabled = false, searchable = false, searchPlaceholder = 'Search...' }) {
   const buttonRef = useRef(null);
   const menuRef = useRef(null);
   const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [menuStyle, setMenuStyle] = useState({});
   const options = Children.toArray(children).map((option) => ({
     value: String(option.props.value ?? option.props.children ?? ''),
@@ -1295,6 +1296,9 @@ function CreativeSelect({ children, className = 'input', value = '', onChange, d
   const selectedIndex = Math.max(0, options.findIndex((option) => option.value === String(value ?? '')));
   const [highlighted, setHighlighted] = useState(selectedIndex);
   const selected = options.find((option) => option.value === String(value ?? '')) || options[0];
+  const visibleOptions = searchable && searchTerm.trim()
+    ? options.filter((option) => String(option.label || '').toLowerCase().includes(searchTerm.toLowerCase().trim()))
+    : options;
 
   const positionMenu = () => {
     const rect = buttonRef.current?.getBoundingClientRect();
@@ -1312,7 +1316,10 @@ function CreativeSelect({ children, className = 'input', value = '', onChange, d
   };
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open) {
+      setSearchTerm('');
+      return undefined;
+    }
     setHighlighted(selectedIndex);
     positionMenu();
     const closeOutside = (event) => {
@@ -1332,6 +1339,7 @@ function CreativeSelect({ children, className = 'input', value = '', onChange, d
   const choose = (option) => {
     if (option.disabled) return;
     onChange?.({ target: { value: option.value }, currentTarget: { value: option.value } });
+    setSearchTerm('');
     setOpen(false);
     buttonRef.current?.focus();
   };
@@ -1387,7 +1395,26 @@ function CreativeSelect({ children, className = 'input', value = '', onChange, d
           className="fixed z-[100] overflow-y-auto rounded-xl border border-slate-200/90 bg-white/95 p-1.5 shadow-[0_20px_60px_rgba(15,23,42,0.24)] backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95"
           style={menuStyle}
         >
-          {options.map((option, index) => {
+          {searchable && (
+            <label className="sticky top-0 z-10 mb-1.5 block rounded-lg bg-white/95 p-1 dark:bg-slate-900/95">
+              <Search className="pointer-events-none absolute ml-2.5 mt-2.5 text-slate-400" size={16} />
+              <input
+                autoFocus
+                className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-dhyanaBlue focus:bg-white focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-blue-950"
+                value={searchTerm}
+                placeholder={searchPlaceholder}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    setSearchTerm('');
+                    setOpen(false);
+                    buttonRef.current?.focus();
+                  }
+                }}
+              />
+            </label>
+          )}
+          {visibleOptions.map((option, index) => {
             const isSelected = option.value !== '' && option.value === String(value ?? '');
             return (
               <button
@@ -1410,6 +1437,12 @@ function CreativeSelect({ children, className = 'input', value = '', onChange, d
               </button>
             );
           })}
+          {!visibleOptions.length && (
+            <div className="px-4 py-8 text-center">
+              <Search className="mx-auto mb-2 text-slate-300 dark:text-slate-600" size={24} />
+              <p className="text-sm font-semibold text-slate-500">No party found</p>
+            </div>
+          )}
         </div>,
         document.body,
       )}
