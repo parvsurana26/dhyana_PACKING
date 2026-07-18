@@ -16,6 +16,11 @@ const money = (value) => `Rs. ${Number(value || 0).toLocaleString('en-IN', {
 const packagingCharges = (slip) => Number(
   slip.packaging_charges ?? Number(slip.bundle_count || 0) * PACKAGING_CHARGE_PER_BUNDLE,
 );
+const safeFilename = (value) => String(value || '')
+  .trim()
+  .replace(/[^a-z0-9._-]+/gi, '-')
+  .replace(/^-+|-+$/g, '') || 'packing-slip';
+const slipFilename = (slip) => `${safeFilename(slip.party_name)}-Bill-${safeFilename(slip.slip_no)}.pdf`;
 
 async function loadImageDataUrl(src) {
   const response = await fetch(src);
@@ -252,12 +257,12 @@ async function createSlipPdf(slip, items = []) {
 
 export async function getSlipPdfFile(slip, items = []) {
   const pdf = await createSlipPdf(slip, items);
-  const filename = `${slip.slip_no || 'packing-slip'}.pdf`;
+  const filename = slipFilename(slip);
   const blob = pdf.output('blob');
   return new File([blob], filename, { type: 'application/pdf' });
 }
 
 export async function downloadSlipPdf(slip, items = []) {
   const pdf = await createSlipPdf(slip, items);
-  pdf.save(`${slip.slip_no || 'packing-slip'}.pdf`);
+  pdf.save(slipFilename(slip));
 }
