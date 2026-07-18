@@ -45,7 +45,7 @@ async function createSlipPdf(slip, items = []) {
 
   const drawBrandHeader = (continued = false) => {
     if (logoDataUrl) {
-      pdf.addImage(logoDataUrl, 'JPEG', margin, continued ? 8 : 7, continued ? 48 : 78, continued ? 15 : 24);
+      pdf.addImage(logoDataUrl, 'JPEG', margin, continued ? 8 : 8, continued ? 42 : 62, continued ? 13 : 19);
     } else {
       pdf.setTextColor(...BLUE);
       pdf.setFont('helvetica', 'bold');
@@ -63,22 +63,18 @@ async function createSlipPdf(slip, items = []) {
       return 35;
     }
 
-    pdf.setFillColor(...BLUE);
-    pdf.roundedRect(pageWidth - 72, 9, 60, 26, 3, 3, 'F');
-    pdf.setTextColor(255, 255, 255);
+    pdf.setTextColor(...BLUE);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(12);
-    pdf.text('PACKING SLIP', pageWidth - 42, 19, { align: 'center' });
-    pdf.setFontSize(9);
-    pdf.text(`BILL NO.  ${slip.slip_no || '-'}`, pageWidth - 42, 28, { align: 'center' });
+    pdf.setFontSize(11);
+    pdf.text('PACKING SLIP', pageWidth - margin, 16, { align: 'right' });
+    pdf.setTextColor(...MUTED);
+    pdf.setFontSize(8);
+    pdf.text(`Bill No. ${slip.slip_no || '-'}`, pageWidth - margin, 24, { align: 'right' });
     pdf.setFillColor(...ORANGE);
-    pdf.roundedRect(pageWidth - 72, 37, 60, 7, 2, 2, 'F');
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(7.5);
-    pdf.text(String(slip.status || 'PACKING COPY').toUpperCase(), pageWidth - 42, 42, { align: 'center' });
+    pdf.roundedRect(pageWidth - margin - 23, 28, 23, 2, 1, 1, 'F');
     pdf.setDrawColor(...LINE);
-    pdf.line(margin, 49, pageWidth - margin, 49);
-    return 57;
+    pdf.line(margin, 39, pageWidth - margin, 39);
+    return 47;
   };
 
   const infoValue = (label, value, x, top, maxWidth) => {
