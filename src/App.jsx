@@ -26,6 +26,10 @@ import {
   Percent,
   Check,
   ChevronDown,
+  Cloud,
+  GripVertical,
+  LoaderCircle,
+  Save,
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { buildMailTo, buildWhatsAppChatUrl, exportSlipsToExcel } from './utils/export';
@@ -45,6 +49,12 @@ const emptyItem = {
   discount: 0,
   amount: 0,
 };
+
+const createEmptyItem = (overrides = {}) => ({
+  ...emptyItem,
+  _row_key: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+  ...overrides,
+});
 
 const PACKAGING_CHARGE_PER_BUNDLE = 350;
 
@@ -297,29 +307,63 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
     .filter((item) => item.packing_slip_id === sourceId)
     .sort(comparePackingItems);
   const [form, setForm] = useState(defaultSlip());
-  const [rows, setRows] = useState([emptyItem]);
+  const [rows, setRows] = useState([createEmptyItem()]);
+  const [editorReady, setEditorReady] = useState(false);
+  const [draftStatus, setDraftStatus] = useState('saved');
+  const [savingAction, setSavingAction] = useState('');
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const draftKey = `dhyana-packing-draft:${editing ? id : duplicateId ? `duplicate-${duplicateId}` : 'new'}`;
 
   useEffect(() => {
+    let nextForm;
+    let nextRows;
     if (!sourceSlip) {
-      generateSlipNo(slips).then((slip_no) => setForm((old) => ({ ...old, slip_no })));
-      return;
+      nextForm = { ...defaultSlip(), slip_no: String(Math.max(0, ...slips.map((slip) => Number(String(slip.slip_no || '').match(/\d+$/)?.[0] || 0))) + 1) };
+      nextRows = [createEmptyItem()];
+    } else {
+      nextForm = {
+        slip_no: editing ? sourceSlip.slip_no : '',
+        party_id: sourceSlip.party_id || '',
+        party_name: sourceSlip.party_name || '',
+        transport: sourceSlip.transport || '',
+        phone: sourceSlip.phone || '',
+        location: sourceSlip.location || '',
+        slip_date: editing ? sourceSlip.slip_date : today(),
+        bundle_count: sourceSlip.bundle_count || 0,
+        packaging_charges: sourceSlip.packaging_charges ?? Number(sourceSlip.bundle_count || 0) * PACKAGING_CHARGE_PER_BUNDLE,
+        remark: sourceSlip.remark || '',
+        status: editing ? sourceSlip.status : 'Draft',
+      };
+      nextRows = sourceItems.length
+        ? sourceItems.map(({ id: _id, packing_slip_id, created_at, sort_order, ...item }) => createEmptyItem(item))
+        : [createEmptyItem()];
+      if (!editing) nextForm.slip_no = String(Math.max(0, ...slips.map((slip) => Number(String(slip.slip_no || '').match(/\d+$/)?.[0] || 0))) + 1);
     }
-    setForm({
-      slip_no: editing ? sourceSlip.slip_no : '',
-      party_id: sourceSlip.party_id || '',
-      party_name: sourceSlip.party_name || '',
-      transport: sourceSlip.transport || '',
-      phone: sourceSlip.phone || '',
-      location: sourceSlip.location || '',
-      slip_date: editing ? sourceSlip.slip_date : today(),
-      bundle_count: sourceSlip.bundle_count || 0,
-      packaging_charges: sourceSlip.packaging_charges ?? Number(sourceSlip.bundle_count || 0) * PACKAGING_CHARGE_PER_BUNDLE,
-      remark: sourceSlip.remark || '',
-      status: editing ? sourceSlip.status : 'Draft',
-    });
-    setRows(sourceItems.length ? sourceItems.map(({ id: _id, packing_slip_id, created_at, sort_order, ...item }) => item) : [emptyItem]);
-    if (!editing) generateSlipNo(slips).then((slip_no) => setForm((old) => ({ ...old, slip_no })));
+    try {
+      const savedDraft = JSON.parse(localStorage.getItem(draftKey));
+      if (savedDraft?.form && savedDraft?.rows?.length) {
+        nextForm = savedDraft.form;
+        nextRows = savedDraft.rows.map((row) => createEmptyItem(row));
+        toast.success('Unsaved draft restored');
+      }
+    } catch {
+      setEditorReady(false);
+      localStorage.removeItem(draftKey);
+    }
+    setForm(nextForm);
+    setRows(nextRows);
+    setEditorReady(true);
   }, [sourceSlip?.id, slips.length]);
+
+  useEffect(() => {
+    if (!editorReady) return undefined;
+    setDraftStatus('saving');
+    const timer = window.setTimeout(() => {
+      localStorage.setItem(draftKey, JSON.stringify({ form, rows, savedAt: new Date().toISOString() }));
+      setDraftStatus('saved');
+    }, 650);
+    return () => window.clearTimeout(timer);
+  }, [form, rows, editorReady, draftKey]);
 
   const totals = useMemo(() => calculateTotals(rows, form.packaging_charges), [rows, form.packaging_charges]);
 
@@ -330,8 +374,7 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
   const addRowAfter = (index) => {
     const current = rows[index];
     const nextRow = current?.brand_id && current?.item_name
-      ? calculateRow({
-        ...emptyItem,
+      ? calculateRow(createEmptyItem({
         brand_id: current.brand_id,
         brand_name: current.brand_name,
         item_name: current.item_name,
@@ -339,8 +382,8 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
         qty: 1,
         qty_type: current.qty_type || 'Pcs',
         discount: current.discount || 0,
-      })
-      : emptyItem;
+      }))
+      : createEmptyItem();
     setRows([...rows.slice(0, index + 1), nextRow, ...rows.slice(index + 1)]);
   };
 
@@ -348,6 +391,24 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
     const product = products.find((entry) => entry.id === productId);
     const brand = brands.find((entry) => entry.id === product?.brand_id);
     if (!product) return;
+    const duplicateIndex = rows.findIndex((row, rowIndex) => rowIndex !== index && row.product_id === product.id);
+    if (duplicateIndex !== -1) {
+      const duplicate = rows[duplicateIndex];
+      const shouldMerge = window.confirm(
+        `${product.item_name} (${product.size}) is already in row ${duplicateIndex + 1}. Merge the quantities into that row?`,
+      );
+      if (shouldMerge) {
+        setRows((currentRows) => currentRows
+          .map((row, rowIndex) => rowIndex === duplicateIndex
+            ? calculateRow({ ...row, qty: Number(row.qty || 0) + Number(currentRows[index]?.qty || 1) })
+            : row)
+          .filter((_, rowIndex) => rowIndex !== index));
+        toast.success(`Quantity merged into row ${duplicateIndex + 1}`);
+      } else {
+        toast.error('Duplicate product was not added');
+      }
+      return;
+    }
     const discount = getPartyBrandDiscount(discounts, form.party_id, product.brand_id);
     updateRow(index, {
       product_id: product.id,
@@ -388,6 +449,7 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
   };
 
   const save = async (status = form.status) => {
+    if (savingAction) return;
     if (!form.party_name.trim()) return toast.error('Party name is required');
     const cleanRows = rows.filter((row) => row.product_id && Number(row.qty) > 0);
     if (!cleanRows.length) return toast.error('Add at least one packing item');
@@ -403,24 +465,50 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
       status,
       created_by: user.id,
     };
-    const itemPayload = cleanRows.map(({ item_query, ...row }, sort_order) => ({ ...row, sort_order }));
+    const itemPayload = cleanRows.map(({ item_query, _row_key, ...row }, sort_order) => ({ ...row, sort_order }));
     const rpcPayload = { ...payload, slip_no: editing ? payload.slip_no : '' };
-    const rpcRes = await supabase.rpc('save_packing_slip', { p_slip: rpcPayload, p_items: itemPayload });
-    if (rpcRes.error) {
-      if (isMissingRpcError(rpcRes.error)) {
-        return toast.error('Database upgrade required: run production_safety_upgrades.sql before saving slips.');
+    setSavingAction(status);
+    try {
+      const rpcRes = await supabase.rpc('save_packing_slip', { p_slip: rpcPayload, p_items: itemPayload });
+      if (rpcRes.error) {
+        if (isMissingRpcError(rpcRes.error)) {
+          toast.error('Database upgrade required: run production_safety_upgrades.sql before saving slips.');
+          return;
+        }
+        toast.error(rpcRes.error.message);
+        return;
       }
-      return toast.error(rpcRes.error.message);
+      localStorage.removeItem(draftKey);
+      toast.success(status === 'Completed' ? 'Packing slip completed' : 'Packing slip saved');
+      await reload();
+      navigate('/slips');
+    } catch (error) {
+      toast.error(error?.message || 'Could not save. Your local draft is safe.');
+    } finally {
+      setSavingAction('');
     }
-    toast.success(status === 'Completed' ? 'Packing slip completed' : 'Packing slip saved');
-    await reload();
-    navigate('/slips');
   };
 
   const printableSlip = { ...form, ...totals };
+  const moveRow = (targetIndex) => {
+    if (draggedIndex === null || draggedIndex === targetIndex) return;
+    setRows((currentRows) => {
+      const next = [...currentRows];
+      const [moved] = next.splice(draggedIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      return next;
+    });
+    setDraggedIndex(targetIndex);
+  };
   return (
     <div className="space-y-6">
-      <PageTitle title={editing ? 'Edit Packing Slip' : 'New Packing Slip'} subtitle="Create a polished slip with product-driven pricing." />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <PageTitle title={editing ? 'Edit Packing Slip' : 'New Packing Slip'} subtitle="Create a polished slip with product-driven pricing." />
+        <div className={clsx('inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition', draftStatus === 'saved' ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300' : 'border-blue-200 bg-blue-50 text-dhyanaBlue dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300')}>
+          {draftStatus === 'saved' ? <Save size={15} /> : <Cloud className="animate-pulse" size={15} />}
+          {draftStatus === 'saved' ? 'Draft protected' : 'Protecting draft...'}
+        </div>
+      </div>
       <div className="panel grid gap-4 md:grid-cols-3">
         <label className="md:col-span-2">
           <span className="label">Select Party</span>
@@ -453,15 +541,15 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
       <div className="panel overflow-x-auto">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-lg font-bold">Packing Items</h2>
-          <button className="btn-secondary" onClick={() => setRows([...rows, emptyItem])}>
+          <button className="btn-secondary" onClick={() => setRows([...rows, createEmptyItem()])}>
             <PackagePlus size={17} /> Add Row
           </button>
         </div>
-        <table className="table min-w-[980px]">
+        <table className="table min-w-[1220px]">
           <thead>
             <tr>
-              {['Brand', 'Item', 'Size', 'Qty', 'Type', 'Rate', 'Discount %', 'Amount', ''].map((head) => (
-                <th key={head}>{head}</th>
+              {['', 'Brand', 'Product Search', 'Size', 'Qty', 'Type', 'Rate', 'Discount %', 'Amount', ''].map((head, headIndex) => (
+                <th key={`${head}-${headIndex}`}>{head}</th>
               ))}
             </tr>
           </thead>
@@ -470,15 +558,25 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
               const brandProducts = products.filter((product) => product.brand_id === row.brand_id && product.is_active);
               const itemProducts = brandProducts.filter((product) => !row.item_name || product.item_name === row.item_name);
               const searchableProducts = products.filter((product) => product.is_active && (!row.brand_id || product.brand_id === row.brand_id));
-              const itemInputValue = row.item_query || (row.product_id ? productLabel(products.find((product) => product.id === row.product_id)) : row.item_name);
-              const itemSearch = itemInputValue.toLowerCase().trim();
-              const searchableItemNames = [...new Set(
-                searchableProducts
-                  .filter((product) => !itemSearch || product.item_name.toLowerCase().includes(itemSearch))
-                  .map((product) => product.item_name),
-              )].slice(0, 80);
               return (
-                <tr key={index}>
+                <tr
+                  key={row._row_key}
+                  className={clsx('transition', draggedIndex === index && 'bg-blue-50/80 dark:bg-blue-950/40')}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => moveRow(index)}
+                >
+                  <td className="w-10 px-1">
+                    <button
+                      type="button"
+                      draggable
+                      title="Drag to reorder row"
+                      className="cursor-grab rounded-lg p-2 text-slate-400 transition hover:bg-blue-50 hover:text-dhyanaBlue active:cursor-grabbing dark:hover:bg-blue-950"
+                      onDragStart={() => setDraggedIndex(index)}
+                      onDragEnd={() => setDraggedIndex(null)}
+                    >
+                      <GripVertical size={18} />
+                    </button>
+                  </td>
                   <td>
                     <CreativeSelect className="cell-input" value={row.brand_id} onChange={(e) => updateRow(index, { ...emptyItem, brand_id: e.target.value, brand_name: brands.find((b) => b.id === e.target.value)?.name || '', discount: getPartyBrandDiscount(discounts, form.party_id, e.target.value) })}>
                       <option value="">Brand</option>
@@ -486,24 +584,14 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
                     </CreativeSelect>
                   </td>
                   <td>
-                    <input
-                      className="cell-input"
-                      list={`item-options-${index}`}
-                      value={itemInputValue}
-                      placeholder="Search item"
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        const exactMatches = searchableProducts.filter((product) => productLabel(product) === value);
-                        const matchedProduct = exactMatches.length === 1 ? exactMatches[0] : exactMatches.find((product) => product.id === row.product_id);
-                        if (matchedProduct) chooseProduct(index, matchedProduct.id);
-                        else updateRow(index, { item_query: value, item_name: value, product_id: '', size: '', rate: 0, discount: row.brand_id ? getPartyBrandDiscount(discounts, form.party_id, row.brand_id) : 0 });
-                      }}
-                    />
-                    <datalist id={`item-options-${index}`}>
-                      {searchableItemNames.map((name) => (
-                        <option key={name} value={name} />
+                    <CreativeSelect searchable optionLimit={120} searchPlaceholder="Search item, size or rate..." className="cell-input min-w-56" value={row.product_id} onChange={(e) => chooseProduct(index, e.target.value)}>
+                      <option value="">Search product</option>
+                      {searchableProducts.map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {`${product.item_name} • ${product.size} • ${money(product.rate)}`}
+                        </option>
                       ))}
-                    </datalist>
+                    </CreativeSelect>
                   </td>
                   <td>
                     <CreativeSelect className="cell-input" value={row.product_id} onChange={(e) => chooseProduct(index, e.target.value)}>
@@ -531,7 +619,7 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
                   <td className="font-semibold">{money(row.amount)}</td>
                   <td>
                     <div className="flex gap-2">
-                    <button title="Delete row" className="icon-btn" onClick={() => setRows(rows.length > 1 ? rows.filter((_, rowIndex) => rowIndex !== index) : [emptyItem])}>
+                    <button title="Delete row" className="icon-btn" onClick={() => setRows(rows.length > 1 ? rows.filter((_, rowIndex) => rowIndex !== index) : [createEmptyItem()])}>
                       <Trash2 size={16} />
                     </button>
                     <button title={row.item_name ? 'Add another size below' : 'Add row below'} className="icon-btn" onClick={() => addRowAfter(index)}>
@@ -547,8 +635,14 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
       </div>
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
         <div className="panel flex flex-wrap gap-2">
-          <button className="btn-primary" onClick={() => save('Draft')}><Upload size={17} /> Save Packing Slip</button>
-          <button className="btn-primary" onClick={() => save('Completed')}><Send size={17} /> Complete</button>
+          <button className="btn-primary min-w-44" disabled={Boolean(savingAction)} onClick={() => save('Draft')}>
+            {savingAction === 'Draft' ? <LoaderCircle className="animate-spin" size={17} /> : <Upload size={17} />}
+            {savingAction === 'Draft' ? 'Saving safely...' : 'Save Packing Slip'}
+          </button>
+          <button className="btn-primary min-w-36" disabled={Boolean(savingAction)} onClick={() => save('Completed')}>
+            {savingAction === 'Completed' ? <LoaderCircle className="animate-spin" size={17} /> : <Send size={17} />}
+            {savingAction === 'Completed' ? 'Completing...' : 'Complete'}
+          </button>
           <button className="btn-secondary" onClick={() => downloadSlipPdf(printableSlip, rows)}><Download size={17} /> Save as PDF</button>
           <button className="btn-secondary" onClick={() => window.print()}><Printer size={17} /> Print</button>
           <button className="btn-secondary" onClick={() => emailSlipPdfWithGmail(printableSlip, rows)}><Mail size={17} /> Email</button>
@@ -1282,7 +1376,7 @@ function PageTitle({ title, subtitle }) {
   );
 }
 
-function CreativeSelect({ children, className = 'input', value = '', onChange, disabled = false, searchable = false, searchPlaceholder = 'Search...' }) {
+function CreativeSelect({ children, className = 'input', value = '', onChange, disabled = false, searchable = false, searchPlaceholder = 'Search...', optionLimit = 250 }) {
   const buttonRef = useRef(null);
   const menuRef = useRef(null);
   const [open, setOpen] = useState(false);
@@ -1296,9 +1390,10 @@ function CreativeSelect({ children, className = 'input', value = '', onChange, d
   const selectedIndex = Math.max(0, options.findIndex((option) => option.value === String(value ?? '')));
   const [highlighted, setHighlighted] = useState(selectedIndex);
   const selected = options.find((option) => option.value === String(value ?? '')) || options[0];
-  const visibleOptions = searchable && searchTerm.trim()
+  const filteredOptions = searchable && searchTerm.trim()
     ? options.filter((option) => String(option.label || '').toLowerCase().includes(searchTerm.toLowerCase().trim()))
     : options;
+  const visibleOptions = filteredOptions.slice(0, optionLimit);
 
   const positionMenu = () => {
     const rect = buttonRef.current?.getBoundingClientRect();
@@ -1442,6 +1537,11 @@ function CreativeSelect({ children, className = 'input', value = '', onChange, d
               <Search className="mx-auto mb-2 text-slate-300 dark:text-slate-600" size={24} />
               <p className="text-sm font-semibold text-slate-500">No party found</p>
             </div>
+          )}
+          {filteredOptions.length > optionLimit && (
+            <p className="px-3 py-2 text-center text-xs font-semibold text-slate-400">
+              Type more to narrow {filteredOptions.length} results
+            </p>
           )}
         </div>,
         document.body,

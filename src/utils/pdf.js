@@ -105,7 +105,11 @@ async function createSlipPdf(slip, items = []) {
 
     if (y + rowHeight > pageHeight - 32) {
       pdf.addPage();
-      y = 18;
+      pdf.setTextColor(11, 94, 168);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.text(`Packing Slip ${slip.slip_no || '-'} (continued)`, 12, 14);
+      y = 25;
       drawTableHeader();
     }
 
@@ -118,28 +122,60 @@ async function createSlipPdf(slip, items = []) {
   });
 
   y += 5;
-  ensureSpace(58);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text(`Subtotal: ${money(slip.subtotal)}`, pageWidth - 75, y);
+  ensureSpace(72);
+  const totalsTop = y;
+  const totalsLeft = pageWidth - 88;
+  pdf.setFillColor(248, 250, 252);
+  pdf.setDrawColor(203, 213, 225);
+  pdf.roundedRect(totalsLeft, totalsTop - 6, 76, 38, 2, 2, 'FD');
+  pdf.setFontSize(9);
+  pdf.setTextColor(71, 85, 105);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('Subtotal', totalsLeft + 5, y);
+  pdf.text(money(slip.subtotal), pageWidth - 17, y, { align: 'right' });
   y += 7;
-  pdf.text(`Discount: ${money(slip.discount_total)}`, pageWidth - 75, y);
+  pdf.text('Discount', totalsLeft + 5, y);
+  pdf.text(money(slip.discount_total), pageWidth - 17, y, { align: 'right' });
   y += 7;
-  pdf.text(`Packaging: ${money(packagingCharges(slip))}`, pageWidth - 75, y);
-  y += 8;
+  pdf.text('Packaging', totalsLeft + 5, y);
+  pdf.text(money(packagingCharges(slip)), pageWidth - 17, y, { align: 'right' });
+  y += 10;
+  pdf.setDrawColor(226, 232, 240);
+  pdf.line(totalsLeft + 4, y - 6, pageWidth - 16, y - 6);
   pdf.setTextColor(11, 94, 168);
-  pdf.setFontSize(13);
-  pdf.text(`Grand Total: ${money(slip.grand_total)}`, pageWidth - 75, y);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(11);
+  pdf.text('GRAND TOTAL', totalsLeft + 5, y);
+  pdf.text(money(slip.grand_total), pageWidth - 17, y, { align: 'right' });
 
-  y += 15;
+  y = totalsTop + 45;
   pdf.setTextColor(25, 35, 55);
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   const remarkLines = pdf.splitTextToSize(`Remark: ${slip.remark || '-'}`, pageWidth - 30);
   ensureSpace(remarkLines.length * 5 + 27);
   pdf.text(remarkLines, 15, y);
-  y += remarkLines.length * 5 + 17;
+  y += remarkLines.length * 5 + 10;
+  pdf.setTextColor(100, 116, 139);
+  pdf.setFontSize(8.5);
+  pdf.text('Please verify the quantity and condition of goods at the time of receipt.', 15, y);
+  y += 17;
+  pdf.setTextColor(25, 35, 55);
+  pdf.setFontSize(10);
   pdf.text('Prepared By', 20, y);
   pdf.text('Receiver Signature', pageWidth - 65, y);
+
+  const pageCount = pdf.getNumberOfPages();
+  for (let page = 1; page <= pageCount; page += 1) {
+    pdf.setPage(page);
+    pdf.setDrawColor(226, 232, 240);
+    pdf.line(12, pageHeight - 13, pageWidth - 12, pageHeight - 13);
+    pdf.setTextColor(100, 116, 139);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.text('Dhyana Kitchenware', 12, pageHeight - 7);
+    pdf.text(`Page ${page} of ${pageCount}`, pageWidth - 12, pageHeight - 7, { align: 'right' });
+  }
   return pdf;
 }
 
