@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Children, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, Navigate, NavLink, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
@@ -23,6 +24,8 @@ import {
   Upload,
   Users,
   Percent,
+  Check,
+  ChevronDown,
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { buildMailTo, buildWhatsAppChatUrl, exportSlipsToExcel } from './utils/export';
@@ -421,14 +424,14 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
       <div className="panel grid gap-4 md:grid-cols-3">
         <label className="md:col-span-2">
           <span className="label">Select Party</span>
-          <select className="input" value={form.party_id} onChange={(e) => chooseParty(e.target.value)}>
+          <CreativeSelect className="input" value={form.party_id} onChange={(e) => chooseParty(e.target.value)}>
             <option value="">Select saved party</option>
             {parties.filter((party) => party.is_active).map((party) => (
               <option key={party.id} value={party.id}>
                 {party.name} {party.phone ? `- ${party.phone}` : ''}
               </option>
             ))}
-          </select>
+          </CreativeSelect>
         </label>
         <div className="flex items-end">
           <Link className="btn-secondary w-full" to="/parties">
@@ -477,10 +480,10 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
               return (
                 <tr key={index}>
                   <td>
-                    <select className="cell-input" value={row.brand_id} onChange={(e) => updateRow(index, { ...emptyItem, brand_id: e.target.value, brand_name: brands.find((b) => b.id === e.target.value)?.name || '', discount: getPartyBrandDiscount(discounts, form.party_id, e.target.value) })}>
+                    <CreativeSelect className="cell-input" value={row.brand_id} onChange={(e) => updateRow(index, { ...emptyItem, brand_id: e.target.value, brand_name: brands.find((b) => b.id === e.target.value)?.name || '', discount: getPartyBrandDiscount(discounts, form.party_id, e.target.value) })}>
                       <option value="">Brand</option>
                       {brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
-                    </select>
+                    </CreativeSelect>
                   </td>
                   <td>
                     <input
@@ -503,16 +506,16 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
                     </datalist>
                   </td>
                   <td>
-                    <select className="cell-input" value={row.product_id} onChange={(e) => chooseProduct(index, e.target.value)}>
+                    <CreativeSelect className="cell-input" value={row.product_id} onChange={(e) => chooseProduct(index, e.target.value)}>
                       <option value="">Size</option>
                       {itemProducts.map((product) => <option key={product.id} value={product.id}>{product.size}</option>)}
-                    </select>
+                    </CreativeSelect>
                   </td>
                   <td><input className="cell-input" type="number" min="0" value={row.qty} onChange={(e) => updateRow(index, { qty: e.target.value })} /></td>
                   <td>
-                    <select className="cell-input" value={row.qty_type} onChange={(e) => updateRow(index, { qty_type: e.target.value })}>
+                    <CreativeSelect className="cell-input" value={row.qty_type} onChange={(e) => updateRow(index, { qty_type: e.target.value })}>
                       {qtyTypes.map((type) => <option key={type}>{type}</option>)}
-                    </select>
+                    </CreativeSelect>
                   </td>
                   <td><input className="cell-input" type="number" value={row.rate} onChange={(e) => updateRow(index, { rate: e.target.value })} /></td>
                   <td>
@@ -577,10 +580,10 @@ function SlipsPage({ slips, items, reload }) {
         <div className="grid gap-3 md:grid-cols-[1fr_180px_180px_auto]">
           <SearchBox value={query} onChange={setQuery} placeholder="Search party, transport, phone, date..." />
           <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <select className="input" value={brand} onChange={(e) => setBrand(e.target.value)}>
+          <CreativeSelect className="input" value={brand} onChange={(e) => setBrand(e.target.value)}>
             <option value="">All brands</option>
             {brands.map((name) => <option key={name}>{name}</option>)}
-          </select>
+          </CreativeSelect>
           <button className="btn-secondary" onClick={() => exportSlipsToExcel(filtered)}><Download size={17} /> Export Excel</button>
         </div>
         <SlipTable slips={filtered} items={items} reload={reload} />
@@ -912,18 +915,18 @@ function ProductsPage({ brands, products, reload }) {
         <div className="grid gap-4 md:grid-cols-4">
         <label>
           <span className="label">Brand</span>
-          <select className="input" value={form.brand_id} onChange={(e) => setForm({ ...form, brand_id: e.target.value, brand_name: '' })}>
+          <CreativeSelect className="input" value={form.brand_id} onChange={(e) => setForm({ ...form, brand_id: e.target.value, brand_name: '' })}>
             <option value="">New brand</option>
             {brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
-          </select>
+          </CreativeSelect>
         </label>
         {!form.brand_id && <Field label="Brand Name" value={form.brand_name} onChange={(v) => setForm({ ...form, brand_name: v })} />}
         <Field label="Item Name" value={form.item_name} onChange={(v) => setForm({ ...form, item_name: v })} />
         <label>
           <span className="label">Quantity Type</span>
-          <select className="input" value={form.qty_type} onChange={(e) => setForm({ ...form, qty_type: e.target.value })}>
+          <CreativeSelect className="input" value={form.qty_type} onChange={(e) => setForm({ ...form, qty_type: e.target.value })}>
             {qtyTypes.map((type) => <option key={type}>{type}</option>)}
-          </select>
+          </CreativeSelect>
         </label>
         <label className="flex items-center gap-3 pt-7">
           <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
@@ -1081,12 +1084,12 @@ function DiscountsPage({ brands, parties, discounts, reload }) {
       <form onSubmit={save} className="panel space-y-5">
         <label className="block max-w-xl">
           <span className="label">Party</span>
-          <select className="input" value={selectedPartyId} onChange={(e) => setSelectedPartyId(e.target.value)}>
+          <CreativeSelect className="input" value={selectedPartyId} onChange={(e) => setSelectedPartyId(e.target.value)}>
             <option value="">Select party</option>
             {parties.filter((party) => party.is_active).map((party) => (
               <option key={party.id} value={party.id}>{party.name}</option>
             ))}
-          </select>
+          </CreativeSelect>
         </label>
         <div className="overflow-x-auto">
           <table className="table min-w-[620px]">
@@ -1276,6 +1279,141 @@ function PageTitle({ title, subtitle }) {
       <h1 className="text-3xl font-bold text-slate-950 dark:text-white">{title}</h1>
       <p className="mt-1 text-slate-500 dark:text-slate-400">{subtitle}</p>
     </div>
+  );
+}
+
+function CreativeSelect({ children, className = 'input', value = '', onChange, disabled = false }) {
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState({});
+  const options = Children.toArray(children).map((option) => ({
+    value: String(option.props.value ?? option.props.children ?? ''),
+    label: option.props.children,
+    disabled: option.props.disabled,
+  }));
+  const selectedIndex = Math.max(0, options.findIndex((option) => option.value === String(value ?? '')));
+  const [highlighted, setHighlighted] = useState(selectedIndex);
+  const selected = options.find((option) => option.value === String(value ?? '')) || options[0];
+
+  const positionMenu = () => {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const spaceBelow = window.innerHeight - rect.bottom - 12;
+    const openAbove = spaceBelow < 220 && rect.top > spaceBelow;
+    const maxHeight = Math.max(150, Math.min(320, openAbove ? rect.top - 12 : spaceBelow));
+    setMenuStyle({
+      left: rect.left,
+      top: openAbove ? undefined : rect.bottom + 7,
+      bottom: openAbove ? window.innerHeight - rect.top + 7 : undefined,
+      width: Math.max(rect.width, 190),
+      maxHeight,
+    });
+  };
+
+  useEffect(() => {
+    if (!open) return undefined;
+    setHighlighted(selectedIndex);
+    positionMenu();
+    const closeOutside = (event) => {
+      if (!buttonRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) setOpen(false);
+    };
+    const reposition = () => positionMenu();
+    document.addEventListener('mousedown', closeOutside);
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, true);
+    return () => {
+      document.removeEventListener('mousedown', closeOutside);
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', reposition, true);
+    };
+  }, [open, selectedIndex]);
+
+  const choose = (option) => {
+    if (option.disabled) return;
+    onChange?.({ target: { value: option.value }, currentTarget: { value: option.value } });
+    setOpen(false);
+    buttonRef.current?.focus();
+  };
+
+  const handleKeyDown = (event) => {
+    if (disabled) return;
+    if (!open && ['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(event.key)) {
+      event.preventDefault();
+      setOpen(true);
+      return;
+    }
+    if (!open) return;
+    if (event.key === 'Escape' || event.key === 'Tab') {
+      setOpen(false);
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      choose(options[highlighted]);
+      return;
+    }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const direction = event.key === 'ArrowDown' ? 1 : -1;
+      let next = highlighted;
+      do next = (next + direction + options.length) % options.length;
+      while (options[next]?.disabled && next !== highlighted);
+      setHighlighted(next);
+    }
+  };
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        className={clsx(className, 'group relative flex items-center justify-between gap-3 text-left')}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => !disabled && setOpen((current) => !current)}
+        onKeyDown={handleKeyDown}
+      >
+        <span className={clsx('min-w-0 flex-1 truncate', !value && 'text-slate-400')}>{selected?.label || 'Select'}</span>
+        <span className={clsx('grid h-7 w-7 shrink-0 place-items-center rounded-md bg-blue-50 text-dhyanaBlue transition dark:bg-blue-950 dark:text-blue-300', open && 'rotate-180 bg-blue-100 dark:bg-blue-900')}>
+          <ChevronDown size={15} strokeWidth={2.5} />
+        </span>
+      </button>
+      {open && createPortal(
+        <div
+          ref={menuRef}
+          role="listbox"
+          className="fixed z-[100] overflow-y-auto rounded-xl border border-slate-200/90 bg-white/95 p-1.5 shadow-[0_20px_60px_rgba(15,23,42,0.24)] backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95"
+          style={menuStyle}
+        >
+          {options.map((option, index) => {
+            const isSelected = option.value !== '' && option.value === String(value ?? '');
+            return (
+              <button
+                key={`${option.value}-${index}`}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                disabled={option.disabled}
+                className={clsx(
+                  'flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition',
+                  index === highlighted && !isSelected && 'bg-slate-100 text-slate-950 dark:bg-slate-800 dark:text-white',
+                  isSelected && 'bg-gradient-to-r from-blue-600 to-dhyanaBlue text-white shadow-md shadow-blue-500/20',
+                  option.disabled && 'cursor-not-allowed opacity-40',
+                )}
+                onMouseEnter={() => setHighlighted(index)}
+                onClick={() => choose(option)}
+              >
+                <span className="truncate">{option.label}</span>
+                {isSelected && <Check size={16} strokeWidth={3} />}
+              </button>
+            );
+          })}
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
 
