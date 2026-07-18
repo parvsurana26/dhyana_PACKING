@@ -25,7 +25,7 @@ function fitText(context, value, maxWidth) {
 }
 
 export async function downloadSlipImage(slip, items = []) {
-  const cleanItems = items.filter((item) => item.product_id && Number(item.qty) > 0);
+  const cleanItems = items.filter((item) => item.item_name && Number(item.qty) > 0);
   const width = 1400;
   const rowHeight = 62;
   const height = Math.max(1050, 900 + cleanItems.length * rowHeight);
