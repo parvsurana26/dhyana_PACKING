@@ -38,7 +38,7 @@ with dhyana_brand as (
   from seed, dhyana_brand
   where p.brand_id = dhyana_brand.id
     and upper(trim(p.item_name)) = upper(trim(seed.item_name))
-    and upper(trim(p.size)) = upper(trim(seed.size))
+    and regexp_replace(upper(trim(p.size)), '\s+', '', 'g') = regexp_replace(upper(trim(seed.size)), '\s+', '', 'g')
     and upper(trim(p.qty_type)) = upper(trim(seed.qty_type))
   returning p.id
 )
@@ -51,6 +51,33 @@ where not exists (
   from public.products p
   where p.brand_id = dhyana_brand.id
     and upper(trim(p.item_name)) = upper(trim(seed.item_name))
-    and upper(trim(p.size)) = upper(trim(seed.size))
+    and regexp_replace(upper(trim(p.size)), '\s+', '', 'g') = regexp_replace(upper(trim(seed.size)), '\s+', '', 'g')
     and upper(trim(p.qty_type)) = upper(trim(seed.qty_type))
 );
+
+-- Verification: these are the final RATE values now stored in Supabase.
+select p.item_name, p.size, p.rate, p.qty_type
+from public.products p
+join public.brands b on b.id = p.brand_id
+where upper(trim(b.name)) = 'DHYANA'
+  and upper(trim(p.item_name)) in (
+    'TRIMEX PLAIN',
+    'TRIMEX SIDE SEE THROUGH',
+    'TRIMEX TOP SEE THROUGH',
+    'TRIMEX HAMMER',
+    'TIPSY BLACK',
+    'TIPSY WHITE',
+    'TIPSY DESIGN',
+    'TIPSY BLOOM',
+    'SIDE SEE THROUGH',
+    'PLAIN-7 X9',
+    'TOP SEE THROUGH-7X9',
+    'SIDE SEE THROUGH-7X9',
+    'APPLE-7X9',
+    'DIAMOND-7X9',
+    'BLACK DESIGN (7 X 9)',
+    'BLACK APPLE (7 X 9)',
+    'WHITE TCS (7 X 9)',
+    'BLACK TCS (7 X 9)'
+  )
+order by p.item_name, p.size;
