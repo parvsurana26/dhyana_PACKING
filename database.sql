@@ -57,6 +57,7 @@ create table if not exists public.packing_slips (
   phone text,
   location text,
   slip_date date not null default current_date,
+  bundle_count numeric(12,2) not null default 0,
   remark text,
   subtotal numeric(12,2) not null default 0,
   discount_total numeric(12,2) not null default 0,
@@ -71,13 +72,16 @@ alter table public.packing_slips
   add column if not exists party_id uuid references public.parties(id) on delete set null;
 
 alter table public.packing_slips
+  add column if not exists bundle_count numeric(12,2) not null default 0;
+
+alter table public.packing_slips
   add column if not exists packaging_charges numeric(12,2) not null default 0;
 
 create table if not exists public.packing_items (
   id uuid primary key default gen_random_uuid(),
   packing_slip_id uuid not null references public.packing_slips(id) on delete cascade,
   brand_id uuid references public.brands(id),
-  product_id uuid references public.products(id),
+  product_id uuid references public.products(id) on delete set null,
   brand_name text,
   item_name text,
   size text,
@@ -86,8 +90,12 @@ create table if not exists public.packing_items (
   rate numeric(12,2) not null default 0,
   discount numeric(5,2) not null default 0,
   amount numeric(12,2) not null default 0,
+  sort_order integer not null default 0,
   created_at timestamptz not null default now()
 );
+
+alter table public.packing_items
+  add column if not exists sort_order integer not null default 0;
 
 alter table public.brands enable row level security;
 alter table public.parties enable row level security;

@@ -19,7 +19,15 @@ async function loadImageDataUrl(src) {
 async function createSlipPdf(slip, items = []) {
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
   let y = 15;
+
+  const ensureSpace = (height, nextY = 18) => {
+    if (y + height <= pageHeight - 15) return false;
+    pdf.addPage();
+    y = nextY;
+    return true;
+  };
 
   try {
     const logoDataUrl = await loadImageDataUrl(logoImage);
@@ -95,7 +103,7 @@ async function createSlipPdf(slip, items = []) {
     ));
     const rowHeight = Math.max(8, Math.max(...cellLines.map((lines) => lines.length)) * 5 + 3);
 
-    if (y + rowHeight > 265) {
+    if (y + rowHeight > pageHeight - 32) {
       pdf.addPage();
       y = 18;
       drawTableHeader();
@@ -110,6 +118,7 @@ async function createSlipPdf(slip, items = []) {
   });
 
   y += 5;
+  ensureSpace(58);
   pdf.setFont('helvetica', 'bold');
   pdf.text(`Subtotal: ${money(slip.subtotal)}`, pageWidth - 75, y);
   y += 7;
@@ -125,8 +134,10 @@ async function createSlipPdf(slip, items = []) {
   pdf.setTextColor(25, 35, 55);
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
-  pdf.text(`Remark: ${slip.remark || '-'}`, 15, y);
-  y += 22;
+  const remarkLines = pdf.splitTextToSize(`Remark: ${slip.remark || '-'}`, pageWidth - 30);
+  ensureSpace(remarkLines.length * 5 + 27);
+  pdf.text(remarkLines, 15, y);
+  y += remarkLines.length * 5 + 17;
   pdf.text('Prepared By', 20, y);
   pdf.text('Receiver Signature', pageWidth - 65, y);
   return pdf;

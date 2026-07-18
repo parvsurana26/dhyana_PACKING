@@ -2,6 +2,9 @@
 -- Run this in Supabase SQL Editor before deploying the updated app.
 
 alter table public.packing_slips
+  add column if not exists bundle_count numeric(12,2) not null default 0;
+
+alter table public.packing_slips
   add column if not exists packaging_charges numeric(12,2) not null default 0;
 
 update public.packing_slips

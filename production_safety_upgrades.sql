@@ -1,6 +1,36 @@
 -- Production safety upgrades for packing slips and product master.
 -- Run this in Supabase SQL Editor.
 
+alter table public.packing_slips
+  add column if not exists bundle_count numeric(12,2) not null default 0;
+
+alter table public.packing_slips
+  add column if not exists packaging_charges numeric(12,2) not null default 0;
+
+-- Preserve the product snapshot on packing_items when a master product is deleted.
+alter table public.packing_items drop constraint if exists packing_items_product_id_fkey;
+alter table public.packing_items
+  add constraint packing_items_product_id_fkey
+  foreign key (product_id) references public.products(id) on delete set null;
+
+-- Keep packing-slip rows in the exact order entered by the user.
+alter table public.packing_items
+  add column if not exists sort_order integer not null default 0;
+
+with numbered_items as (
+  select id,
+         row_number() over (
+           partition by packing_slip_id
+           order by created_at, id
+         ) - 1 as position
+  from public.packing_items
+)
+update public.packing_items item
+set sort_order = numbered_items.position
+from numbered_items
+where item.id = numbered_items.id
+  and item.sort_order = 0;
+
 -- 1) Database-controlled simple slip numbers: 1, 2, 3...
 create sequence if not exists public.packing_slip_no_seq;
 
@@ -127,7 +157,8 @@ begin
     qty_type,
     rate,
     discount,
-    amount
+    amount,
+    sort_order
   )
   select
     saved_slip.id,
@@ -140,7 +171,8 @@ begin
     coalesce(nullif(item.qty_type, ''), 'Pcs'),
     coalesce(item.rate, 0),
     coalesce(item.discount, 0),
-    coalesce(item.amount, 0)
+    coalesce(item.amount, 0),
+    coalesce(item.sort_order, 0)
   from jsonb_to_recordset(p_items) as item(
     brand_id text,
     product_id text,
@@ -151,7 +183,8 @@ begin
     qty_type text,
     rate numeric,
     discount numeric,
-    amount numeric
+    amount numeric,
+    sort_order integer
   )
   where nullif(item.product_id, '') is not null
     and coalesce(item.qty, 0) > 0;

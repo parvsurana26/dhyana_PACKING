@@ -11,8 +11,11 @@ const configuredKey =
   import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
   '';
 
-const isDhyanaProject = configuredUrl.includes('wybojoozkfpmczdfgzkx.supabase.co');
-const supabaseUrl = isDhyanaProject ? configuredUrl : fallbackSupabaseUrl;
-const supabaseKey = isDhyanaProject && configuredKey ? configuredKey : fallbackSupabaseKey;
+if ((configuredUrl && !configuredKey) || (!configuredUrl && configuredKey)) {
+  throw new Error('Supabase configuration is incomplete. Set both the URL and publishable/anon key.');
+}
+
+const supabaseUrl = configuredUrl || fallbackSupabaseUrl;
+const supabaseKey = configuredKey || fallbackSupabaseKey;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);

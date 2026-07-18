@@ -90,7 +90,7 @@ function useSupabaseData(user) {
       supabase.from('products').select('*, brands(name)').order('created_at', { ascending: false }).range(0, 4999),
       supabase.from('party_brand_discounts').select('*, parties(name), brands(name)').order('created_at', { ascending: false }),
       supabase.from('packing_slips').select('*').order('created_at', { ascending: false }),
-      supabase.from('packing_items').select('*').order('created_at'),
+      supabase.from('packing_items').select('*').order('sort_order').order('created_at').order('id'),
     ]);
     [brandRes, partyRes, productRes, discountRes, slipRes, itemRes].forEach((res) => {
       if (res.error) toast.error(res.error.message);
@@ -312,7 +312,7 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
       remark: sourceSlip.remark || '',
       status: editing ? sourceSlip.status : 'Draft',
     });
-    setRows(sourceItems.length ? sourceItems.map(({ id: _id, packing_slip_id, created_at, ...item }) => item) : [emptyItem]);
+    setRows(sourceItems.length ? sourceItems.map(({ id: _id, packing_slip_id, created_at, sort_order, ...item }) => item) : [emptyItem]);
     if (!editing) generateSlipNo(slips).then((slip_no) => setForm((old) => ({ ...old, slip_no })));
   }, [sourceSlip?.id, slips.length]);
 
@@ -398,35 +398,15 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
       status,
       created_by: user.id,
     };
-    const itemPayload = cleanRows.map(({ item_query, ...row }) => row);
+    const itemPayload = cleanRows.map(({ item_query, ...row }, sort_order) => ({ ...row, sort_order }));
     const rpcPayload = { ...payload, slip_no: editing ? payload.slip_no : '' };
     const rpcRes = await supabase.rpc('save_packing_slip', { p_slip: rpcPayload, p_items: itemPayload });
-    if (!rpcRes.error) {
-      toast.success(status === 'Completed' ? 'Packing slip completed' : 'Packing slip saved');
-      await reload();
-      navigate('/slips');
-      return;
+    if (rpcRes.error) {
+      if (isMissingRpcError(rpcRes.error)) {
+        return toast.error('Database upgrade required: run production_safety_upgrades.sql before saving slips.');
+      }
+      return toast.error(rpcRes.error.message);
     }
-    if (!isMissingRpcError(rpcRes.error) && !isMissingPackagingChargesColumn(rpcRes.error)) return toast.error(rpcRes.error.message);
-
-    const { id: _payloadId, ...fallbackPayload } = payload;
-    const safeFallbackPayload = isMissingPackagingChargesColumn(rpcRes.error) ? omitPackagingCharges(fallbackPayload) : fallbackPayload;
-    const slipRes = editing
-      ? await supabase.from('packing_slips').update(safeFallbackPayload).eq('id', id).select().single()
-      : await supabase.from('packing_slips').insert(safeFallbackPayload).select().single();
-    if (slipRes.error && isMissingPackagingChargesColumn(slipRes.error)) {
-      const retryRes = editing
-        ? await supabase.from('packing_slips').update(omitPackagingCharges(safeFallbackPayload)).eq('id', id).select().single()
-        : await supabase.from('packing_slips').insert(omitPackagingCharges(safeFallbackPayload)).select().single();
-      if (retryRes.error) return toast.error(retryRes.error.message);
-      slipRes.data = retryRes.data;
-    } else if (slipRes.error) return toast.error(slipRes.error.message);
-    if (editing) {
-      const deleteRes = await supabase.from('packing_items').delete().eq('packing_slip_id', id);
-      if (deleteRes.error) return toast.error(deleteRes.error.message);
-    }
-    const itemRes = await supabase.from('packing_items').insert(itemPayload.map((row) => ({ ...row, packing_slip_id: slipRes.data.id })));
-    if (itemRes.error) return toast.error(itemRes.error.message);
     toast.success(status === 'Completed' ? 'Packing slip completed' : 'Packing slip saved');
     await reload();
     navigate('/slips');
@@ -1351,15 +1331,6 @@ async function generateSlipNo(slips) {
 
 function isMissingRpcError(error) {
   return ['PGRST202', '42883'].includes(error?.code) || /function .*not found|could not find the function/i.test(error?.message || '');
-}
-
-function isMissingPackagingChargesColumn(error) {
-  return error?.code === '42703' && /packaging_charges/i.test(error?.message || '');
-}
-
-function omitPackagingCharges(payload) {
-  const { packaging_charges, ...rest } = payload;
-  return rest;
 }
 
 function getPartyBrandDiscount(discounts, partyId, brandId) {
