@@ -425,6 +425,32 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
     });
   };
 
+  const chooseItemName = (index, itemName) => {
+    if (!itemName) {
+      updateRow(index, { product_id: '', item_query: '', item_name: '', size: '', rate: 0 });
+      return;
+    }
+    const matchingProducts = products.filter((product) => (
+      product.is_active
+      && product.item_name === itemName
+      && (!rows[index].brand_id || product.brand_id === rows[index].brand_id)
+    ));
+    const firstProduct = matchingProducts[0];
+    if (!firstProduct) return;
+    const brand = brands.find((entry) => entry.id === firstProduct.brand_id);
+    updateRow(index, {
+      product_id: '',
+      item_query: itemName,
+      item_name: itemName,
+      brand_id: firstProduct.brand_id,
+      brand_name: brand?.name || '',
+      size: '',
+      rate: 0,
+      qty_type: firstProduct.qty_type || 'Pcs',
+      discount: getPartyBrandDiscount(discounts, form.party_id, firstProduct.brand_id),
+    });
+  };
+
   const chooseParty = (partyId) => {
     const party = parties.find((entry) => entry.id === partyId);
     if (!party) {
@@ -560,6 +586,8 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
               const brandProducts = products.filter((product) => product.brand_id === row.brand_id && product.is_active);
               const itemProducts = brandProducts.filter((product) => !row.item_name || product.item_name === row.item_name);
               const searchableProducts = products.filter((product) => product.is_active && (!row.brand_id || product.brand_id === row.brand_id));
+              const searchableItemNames = [...new Set(searchableProducts.map((product) => product.item_name))]
+                .sort((a, b) => a.localeCompare(b));
               return (
                 <tr
                   key={row._row_key}
@@ -586,11 +614,11 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
                     </CreativeSelect>
                   </td>
                   <td>
-                    <CreativeSelect searchable optionLimit={120} searchPlaceholder="Search item, size or rate..." className="cell-input min-w-56" value={row.product_id} onChange={(e) => chooseProduct(index, e.target.value)}>
+                    <CreativeSelect searchable wrapOptions menuMinWidth={440} optionLimit={120} searchPlaceholder="Search product name..." className="cell-input min-w-56" value={row.item_name} onChange={(e) => chooseItemName(index, e.target.value)}>
                       <option value="">Search product</option>
-                      {searchableProducts.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {`${product.item_name} • ${product.size} • ${money(product.rate)}`}
+                      {searchableItemNames.map((itemName) => (
+                        <option key={itemName} value={itemName}>
+                          {itemName}
                         </option>
                       ))}
                     </CreativeSelect>
@@ -1380,7 +1408,7 @@ function PageTitle({ title, subtitle }) {
   );
 }
 
-function CreativeSelect({ children, className = 'input', value = '', onChange, disabled = false, searchable = false, searchPlaceholder = 'Search...', optionLimit = 250 }) {
+function CreativeSelect({ children, className = 'input', value = '', onChange, disabled = false, searchable = false, searchPlaceholder = 'Search...', optionLimit = 250, menuMinWidth = 190, wrapOptions = false }) {
   const buttonRef = useRef(null);
   const menuRef = useRef(null);
   const [open, setOpen] = useState(false);
@@ -1405,11 +1433,13 @@ function CreativeSelect({ children, className = 'input', value = '', onChange, d
     const spaceBelow = window.innerHeight - rect.bottom - 12;
     const openAbove = spaceBelow < 220 && rect.top > spaceBelow;
     const maxHeight = Math.max(150, Math.min(320, openAbove ? rect.top - 12 : spaceBelow));
+    const menuWidth = Math.min(Math.max(rect.width, menuMinWidth), window.innerWidth - 24);
+    const menuLeft = Math.min(Math.max(12, rect.left), window.innerWidth - menuWidth - 12);
     setMenuStyle({
-      left: rect.left,
+      left: menuLeft,
       top: openAbove ? undefined : rect.bottom + 7,
       bottom: openAbove ? window.innerHeight - rect.top + 7 : undefined,
-      width: Math.max(rect.width, 190),
+      width: menuWidth,
       maxHeight,
     });
   };
@@ -1531,7 +1561,7 @@ function CreativeSelect({ children, className = 'input', value = '', onChange, d
                 onMouseEnter={() => setHighlighted(index)}
                 onClick={() => choose(option)}
               >
-                <span className="truncate">{option.label}</span>
+                <span className={clsx(wrapOptions ? 'whitespace-normal break-words leading-5' : 'truncate')}>{option.label}</span>
                 {isSelected && <Check size={16} strokeWidth={3} />}
               </button>
             );
