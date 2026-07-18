@@ -97,6 +97,32 @@ create table if not exists public.packing_items (
 alter table public.packing_items
   add column if not exists sort_order integer not null default 0;
 
+create or replace function public.ensure_packing_item_sort_order()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if new.sort_order is null or (
+    new.sort_order = 0 and exists (
+      select 1 from public.packing_items
+      where packing_slip_id = new.packing_slip_id
+    )
+  ) then
+    select coalesce(max(sort_order), -1) + 1
+      into new.sort_order
+    from public.packing_items
+    where packing_slip_id = new.packing_slip_id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists packing_items_sort_order_trigger on public.packing_items;
+create trigger packing_items_sort_order_trigger
+before insert on public.packing_items
+for each row execute function public.ensure_packing_item_sort_order();
+
 alter table public.brands enable row level security;
 alter table public.parties enable row level security;
 alter table public.party_brand_discounts enable row level security;

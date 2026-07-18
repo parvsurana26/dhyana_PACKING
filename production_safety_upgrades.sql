@@ -31,6 +31,34 @@ from numbered_items
 where item.id = numbered_items.id
   and item.sort_order = 0;
 
+-- Safety net for older clients/functions: assign the next position when every
+-- inserted row arrives with the default position of zero.
+create or replace function public.ensure_packing_item_sort_order()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if new.sort_order is null or (
+    new.sort_order = 0 and exists (
+      select 1 from public.packing_items
+      where packing_slip_id = new.packing_slip_id
+    )
+  ) then
+    select coalesce(max(sort_order), -1) + 1
+      into new.sort_order
+    from public.packing_items
+    where packing_slip_id = new.packing_slip_id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists packing_items_sort_order_trigger on public.packing_items;
+create trigger packing_items_sort_order_trigger
+before insert on public.packing_items
+for each row execute function public.ensure_packing_item_sort_order();
+
 -- 1) Database-controlled simple slip numbers: 1, 2, 3...
 create sequence if not exists public.packing_slip_no_seq;
 

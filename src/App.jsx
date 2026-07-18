@@ -290,7 +290,9 @@ function SlipEditor({ brands, parties, products, discounts, slips, items, reload
   const duplicateId = new URLSearchParams(location.search).get('from');
   const sourceId = editing ? id : duplicateId;
   const sourceSlip = slips.find((slip) => slip.id === sourceId);
-  const sourceItems = items.filter((item) => item.packing_slip_id === sourceId);
+  const sourceItems = items
+    .filter((item) => item.packing_slip_id === sourceId)
+    .sort(comparePackingItems);
   const [form, setForm] = useState(defaultSlip());
   const [rows, setRows] = useState([emptyItem]);
 
@@ -638,7 +640,9 @@ async function emailSlipPdfWithGmail(slip, items) {
 function SlipView({ slips, items }) {
   const { id } = useParams();
   const slip = slips.find((entry) => entry.id === id);
-  const slipItems = items.filter((item) => item.packing_slip_id === id);
+  const slipItems = items
+    .filter((item) => item.packing_slip_id === id)
+    .sort(comparePackingItems);
   if (!slip) return <div className="panel">Packing slip not found.</div>;
   return (
     <div className="space-y-6">
@@ -717,7 +721,9 @@ function SlipTable({ slips, items = [], reload, compact }) {
         </thead>
         <tbody>
           {slips.map((slip) => {
-            const slipItems = items.filter((item) => item.packing_slip_id === slip.id);
+            const slipItems = items
+              .filter((item) => item.packing_slip_id === slip.id)
+              .sort(comparePackingItems);
             return (
               <tr key={slip.id}>
                 <td className="font-semibold text-dhyanaBlue">{slip.slip_no}</td>
@@ -1388,6 +1394,14 @@ function filterSlips(slips, query) {
   const needle = query.toLowerCase().trim();
   if (!needle) return slips;
   return slips.filter((slip) => [slip.party_name, slip.transport, slip.phone, slip.location, slip.slip_date, slip.slip_no].some((value) => String(value || '').toLowerCase().includes(needle)));
+}
+
+function comparePackingItems(a, b) {
+  const positionDifference = Number(a.sort_order || 0) - Number(b.sort_order || 0);
+  if (positionDifference) return positionDifference;
+  const createdDifference = String(a.created_at || '').localeCompare(String(b.created_at || ''));
+  if (createdDifference) return createdDifference;
+  return String(a.id || '').localeCompare(String(b.id || ''));
 }
 
 export default function App() {
