@@ -1,10 +1,15 @@
--- Seed KOMAL products from Price list 01-04-2026 with effect.xlsx
--- Rows: 175
--- Zero-rate rows are skipped.
+-- Seed KOMAL products from Komal_Price_List_01-06-2026.xlsx
+-- Rows: 211
+-- Product name, size, rate and quantity type come from the workbook.
+-- The workbook Packing column is intentionally ignored.
 
 insert into public.brands (name)
 values ('KOMAL')
 on conflict (name) do nothing;
+
+update public.products
+set is_active = false
+where brand_id = (select id from public.brands where name = 'KOMAL');
 
 with brand_row as (
   select id from public.brands where name = 'KOMAL'
@@ -21,6 +26,10 @@ with brand_row as (
     ('BIG IDLY COOKER WITH IDLY STAND', '4X6', 1235.00, 'Pcs'),
     ('BIG IDLY COOKER WITH MULTY', '3 PLATES', 1570.00, 'Pcs'),
     ('BIG IDLY COOKER WITH MULTY', '4 PLATES', 1745.00, 'Pcs'),
+    ('BIG THAAT IDLY COOKER WITH MULTY', '5 PLATES', 0.00, 'Pcs'),
+    ('BIG THAAT IDLY COOKER WITH MULTY', '6 PLATES', 0.00, 'Pcs'),
+    ('BIG THAAT IDLY COOKER WITH PLATES THAAT IDLY STAND', '6 PLATES', 0.00, 'Pcs'),
+    ('BIG THAAT IDLY COOKER WITH THAAT IDLY STAND', '5 PLATES', 0.00, 'Pcs'),
     ('CAPPUCCINO DOUBLE WALL MUG BIG', '2 PCS.SET', 305.00, 'Box'),
     ('CAPPUCCINO DOUBLE WALL MUG SMALL', '2 PCS.SET', 270.00, 'Box'),
     ('COCONUT DELUXE (VACUUM BASE )', 'STANDARD', 230.00, 'Pcs'),
@@ -49,6 +58,13 @@ with brand_row as (
     ('IDLY STAND ( PRESTIGE TYPE )', '4 X 5', 360.00, 'Pcs'),
     ('IDLY STAND ( PRESTIGE TYPE )', '4 X 6', 405.00, 'Pcs'),
     ('JANTA PATLA', 'STANDARD', 375.00, 'Pcs'),
+    ('JEWELLERY BOX ( 14”)', 'JUMBO', 850.00, 'Pcs'),
+    ('JEWELLERY BOX ( 8”)', 'SMALL', 460.00, 'Pcs'),
+    ('JEWELLERY BOX ( 8”) (WITHOUT VELVET)', 'SMALL', 385.00, 'Pcs'),
+    ('JEWELLERY BOX (10”)', 'MEDIUM', 525.00, 'Pcs'),
+    ('JEWELLERY BOX (10”) (WITHOUT VELVET)', 'MEDIUM', 450.00, 'Pcs'),
+    ('JEWELLERY BOX (12”)', 'BIG', 590.00, 'Pcs'),
+    ('JEWELLERY BOX (12”) (WITHOUT VELVET)', 'BIG', 515.00, 'Pcs'),
     ('LIME SQUEEZER', 'STANDARD', 155.00, 'Pcs'),
     ('MILK & SUGAR POT WITH LID (170 ML.)', '6 OZ', 305.00, 'Pcs'),
     ('MILK & SUGAR POT WITH LID (300 ML.)', '10 OZ', 330.00, 'Pcs'),
@@ -60,24 +76,24 @@ with brand_row as (
     ('MINI IDLY STAND ( PRESTIGE TYPE )', '18 X 4', 300.00, 'Pcs'),
     ('MINI IDLY STAND ( PRESTIGE TYPE )', '18 X 5', 365.00, 'Pcs'),
     ('MINI IDLY STAND ( PRESTIGE TYPE )', '18 X 6', 410.00, 'Pcs'),
-    ('MULTY KADAI SET (WITH )', 'SIX PLATES', 1800.00, 'Pcs'),
+    ('MULTY KADAI SET (WITH )', 'SIX PLATES', 1875.00, 'Pcs'),
     ('MULTY SET - 3', 'THREE PLATES', 740.00, 'Pcs'),
     ('MULTY SET - 3 ( WITHOUT CHINA ) TWO IN ONE - 3', 'STANDARD', 615.00, 'Pcs'),
     ('MULTY SET - 4', 'FOUR PLATES', 915.00, 'Pcs'),
     ('MULTY SET - 4 ( WITHOUT CHINA ) TWO IN ONE - 4', 'STANDARD', 735.00, 'Pcs'),
-    ('NON STICK APPACHETTY', 'STANDARD', 510.00, 'Pcs'),
-    ('NON STICK APPAM PATRA (12 CAVITIES)', 'STANDARD', 510.00, 'Pcs'),
-    ('NON STICK APPAM PATRA WITH GLASS LID-12(HEAVY)', 'STANDARD', 775.00, 'Pcs'),
-    ('NON STICK FLAT DOSA TAWA DIA', '350MM', 875.00, 'Pcs'),
-    ('NON STICK FLAT DOSA TAWA DIA 350MM(INDUCTION)', 'STANDARD', 975.00, 'Pcs'),
-    ('NON STICK GRILL PAN (', '24CM', 615.00, 'Pcs'),
-    ('NON STICK GRILL TOASTER', 'JUMBO', 615.00, 'Pcs'),
-    ('NON STICK GRILL TOASTER 2 CUT', 'JUMBO', 615.00, 'Pcs'),
-    ('NON STICK GRILL TOASTER 4 CUT', 'JUMBO', 615.00, 'Pcs'),
-    ('NON STICK TOASTER', 'STANDARD', 275.00, 'Pcs'),
-    ('NON STICK TOASTER GRILL', 'STANDARD', 315.00, 'Pcs'),
-    ('NON STICK UTTAPAM (4 CAVITIES )', 'STANDARD', 425.00, 'Pcs'),
-    ('NON STICK WAFFLE MAKER', 'STANDARD', 615.00, 'Pcs'),
+    ('NON STICK APPACHETTY', 'STANDARD', 575.00, 'Pcs'),
+    ('NON STICK APPAM PATRA (12 CAVITIES)', 'STANDARD', 575.00, 'Pcs'),
+    ('NON STICK APPAM PATRA WITH GLASS LID-12(HEAVY)', 'STANDARD', 850.00, 'Pcs'),
+    ('NON STICK FLAT DOSA TAWA DIA', '350MM', 925.00, 'Pcs'),
+    ('NON STICK FLAT DOSA TAWA DIA 350MM(INDUCTION)', 'STANDARD', 1025.00, 'Pcs'),
+    ('NON STICK GRILL PAN (', '24CM', 650.00, 'Pcs'),
+    ('NON STICK JUMBO GRILL TOASTER', 'STANDARD', 650.00, 'Pcs'),
+    ('NON STICK JUMBO GRILL TOASTER 2 CUT', 'STANDARD', 650.00, 'Pcs'),
+    ('NON STICK JUMBO GRILL TOASTER 4 CUT', 'STANDARD', 650.00, 'Pcs'),
+    ('NON STICK TOASTER', 'STANDARD', 285.00, 'Pcs'),
+    ('NON STICK TOASTER GRILL', 'STANDARD', 325.00, 'Pcs'),
+    ('NON STICK UTTAPAM (4 CAVITIES )', 'STANDARD', 475.00, 'Pcs'),
+    ('NON STICK WAFFLE MAKER', 'STANDARD', 650.00, 'Pcs'),
     ('OIL DISPENSER', '250 ML', 235.00, 'Pcs'),
     ('OIL DISPENSER', '350 ML', 255.00, 'Pcs'),
     ('OIL DISPENSER', '500 ML', 280.00, 'Pcs'),
@@ -114,7 +130,7 @@ with brand_row as (
     ('S.S MASALA PETTI MEDIUM WITH TWELVE SQUARE WATI', 'NO. 12', 2050.00, 'Pcs'),
     ('S.S MASALA PETTI NO.3 SIX WATI', 'STANDARD', 625.00, 'Pcs'),
     ('S.S MASALA PETTI NO.4 SIX WATI', 'STANDARD', 725.00, 'Pcs'),
-    ('S.S MASALA PETTI NO.NINE WATI', 'MINI', 825.00, 'Pcs'),
+    ('S.S MASALA PETTI NO.NINE WATI (MINI)', 'STANDARD', 825.00, 'Pcs'),
     ('S.S OIL DROPPER', '350ML', 315.00, 'Pcs'),
     ('S.S OIL DROPPER', '500ML', 375.00, 'Pcs'),
     ('S.S OIL DROPPER', '750ML', 420.00, 'Pcs'),
@@ -135,6 +151,11 @@ with brand_row as (
     ('S.S TRI PLY KADAI WITH S.S LID', '30CM', 2100.00, 'Pcs'),
     ('S.S. BABY FEEDING BOTTLE', '150ML', 285.00, 'Pcs'),
     ('S.S. BABY FEEDING BOTTLE', '250ML', 335.00, 'Pcs'),
+    ('S.S. FALAFEL MAKER NO.2', '35 MM', 0.00, 'Pcs'),
+    ('S.S. FALAFEL MAKER NO.3', '40 MM', 0.00, 'Pcs'),
+    ('S.S. FALAFEL MAKER NO.4', '45 MM', 0.00, 'Pcs'),
+    ('S.S. FALAFEL MAKER NO.5', '60 MM', 0.00, 'Pcs'),
+    ('S.S. FALAFEL MAKER NO.6', '65MM', 0.00, 'Pcs'),
     ('S.S. GREEN COCONUT OPENER', 'STANDARD', 185.00, 'Pcs'),
     ('S.S. KITCHEN EXPRESS', 'STANDARD', 365.00, 'Pcs'),
     ('S.S. MASALA PETTI JUMBO WITH TWELVE SQUARE WATI', 'NO. 12', 2550.00, 'Pcs'),
@@ -147,6 +168,8 @@ with brand_row as (
     ('S.S. POOJA PETTI NO.3 (WITH LOCK & KEY)', 'STANDARD', 330.00, 'Pcs'),
     ('S.S. POOJA PETTI NO.4 (WITH LOCK & KEY)', 'STANDARD', 390.00, 'Pcs'),
     ('S.S. SMASHER S. S. HANDLE ( DIA. 4 INCH )', 'STANDARD', 225.00, 'Pcs'),
+    ('S.S.BANGLE AND JEWELLERY BOX', 'NO. 3', 900.00, 'Pcs'),
+    ('S.S.BANGLE AND JEWELLERY BOX', 'NO. 4', 1000.00, 'Pcs'),
     ('S.S.FRUIT HANDY JUICER', 'STANDARD', 235.00, 'Pcs'),
     ('S.S.MULTIPURPOSE STORAGE CANISTER', '500ML', 235.00, 'Pcs'),
     ('S.S.MULTIPURPOSE STORAGE CANISTER', '750ML', 255.00, 'Pcs'),
@@ -157,11 +180,19 @@ with brand_row as (
     ('S.S.PURANMAKER BOWLS (5 JALIES)', 'STANDARD', 490.00, 'Pcs'),
     ('S.S.SMASHER PLASTIC HANDLE (DIA. 4 INCH )', 'STANDARD', 130.00, 'Pcs'),
     ('S.S.SMASHER WOODEN HANDLE (DIA. 4 INCH )', 'STANDARD', 150.00, 'Pcs'),
+    ('SCHOOL BAG', 'NO. 5', 450.00, 'Pcs'),
+    ('SCHOOL BAG', 'NO. 6', 505.00, 'Pcs'),
+    ('SCHOOL BAG', 'NO. 7', 570.00, 'Pcs'),
+    ('SCHOOL BAG', 'NO. 8', 685.00, 'Pcs'),
     ('SLIM DOUBLE WALL TALL MUG', '2 PCS.SET', 330.00, 'Box'),
     ('SMALL IDLY COOKER WITH DHOKLA', '3 PLATES', 1290.00, 'Pcs'),
     ('SMALL IDLY COOKER WITH IDLY STAND', '4X3', 1015.00, 'Pcs'),
     ('SMALL IDLY COOKER WITH IDLY STAND', '4X4', 1070.00, 'Pcs'),
     ('SMALL IDLY COOKER WITH MULTY', '3 PLATES', 1520.00, 'Pcs'),
+    ('SMALL THAAT IDLY COOKER WITH MULTY', '3 PLATES', 0.00, 'Pcs'),
+    ('SMALL THAAT IDLY COOKER WITH MULTY', '4 PLATES', 0.00, 'Pcs'),
+    ('SMALL THAAT IDLY COOKER WITH THAAT IDLY STAND', '3 PLATES', 0.00, 'Pcs'),
+    ('SMALL THAAT IDLY COOKER WITH THAAT IDLY STAND', '4 PLATES', 0.00, 'Pcs'),
     ('SOBER DOUBLE WALL MUG BIG', '2 PCS.SET', 305.00, 'Box'),
     ('SOBER DOUBLE WALL MUG SMALL', '2 PCS.SET', 270.00, 'Box'),
     ('STAINLESS STEEL TEA CUP DOUBLE WALL', '6 PCS. SET', 525.00, 'Box'),
@@ -174,7 +205,13 @@ with brand_row as (
     ('THAAT IDLY STAND', '4 PLATES', 470.00, 'Pcs'),
     ('THAAT IDLY STAND', '5 PLATES', 500.00, 'Pcs'),
     ('THAAT IDLY STAND', '6 PLATES', 535.00, 'Pcs'),
-    ('TRI-PLY MULTY KADAI SET (WITH )', 'SIX PLATES', 2600.00, 'Pcs'),
+    ('THAAT IDLY STEAMER BIG', 'STANDARD', 0.00, 'Pcs'),
+    ('THAAT IDLY STEAMER SMALL', 'STANDARD', 0.00, 'Pcs'),
+    ('THAAT MULTY SET - 3', 'THREE PLATES', 0.00, 'Pcs'),
+    ('THAAT MULTY SET - 4', 'FOUR PLATES', 0.00, 'Pcs'),
+    ('THAAT MULTY SET - 5', 'FIVE PLATES', 0.00, 'Pcs'),
+    ('THAAT MULTY SET - 6', 'SIX PLATES', 0.00, 'Pcs'),
+    ('TRI-PLY MULTY KADAI SET (WITH )', 'SIX PLATES', 2750.00, 'Pcs'),
     ('WHITE CAP OIL CAN SUPER DELUXE', '350 ML', 235.00, 'Pcs'),
     ('WHITE CAP OIL CAN SUPER DELUXE', '500 ML', 260.00, 'Pcs'),
     ('WHITE CAP OIL CAN SUPER DELUXE', '750 ML', 290.00, 'Pcs'),
@@ -182,6 +219,10 @@ with brand_row as (
     ('WHITE CAP OIL CAN SUPER DELUXE', '1200 ML', 370.00, 'Pcs'),
     ('WIRE DHOKLA', '3 PLATES', 445.00, 'Pcs'),
     ('WIRE DHOKLA', '4 PLATES', 530.00, 'Pcs'),
+    ('WOODEN HANDICRAFT JEWELLERY BOX BIG', 'STANDARD', 350.00, 'Pcs'),
+    ('WOODEN HANDICRAFT JEWELLERY BOX MEDIUM', 'STANDARD', 300.00, 'Pcs'),
+    ('WOODEN HANDICRAFT JEWELLERY BOX MINI', 'STANDARD', 175.00, 'Pcs'),
+    ('WOODEN HANDICRAFT JEWELLERY BOX SMALL', 'STANDARD', 250.00, 'Pcs'),
     ('WRITING PAD', 'BIG', 255.00, 'Pcs'),
     ('WRITING PAD', 'MEDIUM', 220.00, 'Pcs'),
     ('WRITING PAD', 'SMALL', 190.00, 'Pcs')
@@ -192,7 +233,7 @@ with brand_row as (
   from seed, brand_row
   where p.brand_id = brand_row.id
     and upper(trim(p.item_name)) = upper(trim(seed.item_name))
-    and upper(trim(p.size)) = upper(trim(seed.size))
+    and regexp_replace(upper(trim(p.size)), '\s+', '', 'g') = regexp_replace(upper(trim(seed.size)), '\s+', '', 'g')
     and upper(trim(p.qty_type)) = upper(trim(seed.qty_type))
   returning p.id
 )
@@ -205,6 +246,12 @@ where not exists (
   from public.products p
   where p.brand_id = brand_row.id
     and upper(trim(p.item_name)) = upper(trim(seed.item_name))
-    and upper(trim(p.size)) = upper(trim(seed.size))
+    and regexp_replace(upper(trim(p.size)), '\s+', '', 'g') = regexp_replace(upper(trim(seed.size)), '\s+', '', 'g')
     and upper(trim(p.qty_type)) = upper(trim(seed.qty_type))
 );
+
+select p.item_name, p.size, p.rate, p.qty_type
+from public.products p
+join public.brands b on b.id = p.brand_id
+where upper(trim(b.name)) = 'KOMAL'
+order by p.item_name, p.size;
