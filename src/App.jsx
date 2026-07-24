@@ -163,20 +163,20 @@ function Login({ session }) {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 p-4 dark:bg-slate-950">
-      <section className="mx-auto grid min-h-[calc(100vh-2rem)] max-w-6xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-7">
+    <main className="min-h-screen overflow-x-hidden bg-slate-100 p-4 dark:bg-slate-950">
+      <section className="mx-auto grid min-h-[calc(100vh-2rem)] w-full min-w-0 max-w-6xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="min-w-0 space-y-7">
           <Logo />
-          <div className="max-w-2xl">
+          <div className="min-w-0 max-w-2xl">
             <p className="text-sm font-semibold uppercase text-dhyanaOrange">Dhyana Kitchenware</p>
-            <h1 className="mt-3 text-4xl font-bold text-slate-950 dark:text-white sm:text-5xl">
+            <h1 className="mt-3 break-words text-3xl font-bold text-slate-950 dark:text-white sm:text-5xl">
               Packing Slip Management System
             </h1>
-            <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">
+            <p className="mt-4 break-words text-base text-slate-600 dark:text-slate-300 sm:text-lg">
               Create, track, print, email, and export professional packing slips from a clean office-ready dashboard.
             </p>
           </div>
-          <div className="grid max-w-2xl gap-4 sm:grid-cols-3">
+          <div className="grid min-w-0 max-w-2xl gap-4 sm:grid-cols-3">
             {['Auto Slip No', 'PDF Export', 'WhatsApp Share'].map((label) => (
               <div key={label} className="rounded-lg bg-white p-4 shadow-soft dark:bg-slate-900">
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</p>
@@ -184,7 +184,7 @@ function Login({ session }) {
             ))}
           </div>
         </div>
-        <form onSubmit={submit} className="rounded-lg bg-white p-7 shadow-soft dark:bg-slate-900">
+        <form onSubmit={submit} className="min-w-0 rounded-lg bg-white p-5 shadow-soft dark:bg-slate-900 sm:p-7">
           <h2 className="text-2xl font-bold text-slate-950 dark:text-white">Login</h2>
           <p className="mt-1 text-sm text-slate-500">Use your Supabase email and password.</p>
           <label className="mt-6 block text-sm font-semibold">Email</label>
