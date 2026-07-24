@@ -31,12 +31,14 @@ import {
   LoaderCircle,
   Save,
   ImageDown,
+  ShoppingCart,
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { buildMailTo, buildWhatsAppChatUrl, exportSlipsToExcel } from './utils/export';
 import { downloadSlipPdf, getSlipPdfFile } from './utils/pdf';
 import { downloadSlipImage } from './utils/image';
 import logoImage from './assets/logo.jpeg';
+import { PurchaseOrderEditor, PurchaseOrderList, PurchaseOrderView } from './purchaseOrders';
 
 const emptyItem = {
   brand_id: '',
@@ -211,6 +213,7 @@ function Shell({ children, session, dark, setDark }) {
     ['/', LayoutDashboard, 'Dashboard'],
     ['/new', FilePlus2, 'New Packing Slip'],
     ['/slips', ClipboardList, 'View Slips'],
+    ['/purchase-orders', ShoppingCart, 'Purchase Orders'],
     ['/parties', Users, 'Manage Parties'],
     ['/discounts', Percent, 'Discounts'],
     ['/products', Boxes, 'Manage Products'],
@@ -1794,6 +1797,10 @@ export default function App() {
                   <Route path="/slips" element={<SlipsPage {...data} />} />
                   <Route path="/slips/:id" element={<SlipView {...data} />} />
                   <Route path="/slips/:id/edit" element={<SlipEditor {...data} user={session.user} />} />
+                  <Route path="/purchase-orders" element={<PurchaseOrderList />} />
+                  <Route path="/purchase-orders/new" element={<PurchaseOrderEditor {...data} user={session.user} />} />
+                  <Route path="/purchase-orders/:id" element={<PurchaseOrderView />} />
+                  <Route path="/purchase-orders/:id/edit" element={<PurchaseOrderEditor {...data} user={session.user} />} />
                   <Route path="/parties" element={<PartiesPage {...data} />} />
                   <Route path="/discounts" element={<DiscountsPage {...data} />} />
                   <Route path="/products" element={<ProductsPage {...data} />} />
